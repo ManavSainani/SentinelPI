@@ -19,9 +19,16 @@ class StorageSettings(BaseModel):
     db_path: str = "data/sentinelpi.db"
 
 
+class CollectionSettings(BaseModel):
+    disk_path: str = "/"
+    process_limit: int = Field(default=50, ge=1, le=500)
+    port_limit: int = Field(default=200, ge=1, le=1000)
+
+
 class Settings(BaseModel):
     server: ServerSettings = ServerSettings()
     storage: StorageSettings = StorageSettings()
+    collection: CollectionSettings = CollectionSettings()
     # Built frontend (Vite output). Relative paths resolve from the working directory.
     frontend_dist: str = "frontend/dist"
 

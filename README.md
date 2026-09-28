@@ -3,7 +3,7 @@
 A local-first host monitoring and security-awareness dashboard. Full design in
 [`docs/MASTER_PROJECT_SPEC.md`](docs/MASTER_PROJECT_SPEC.md).
 
-**Status:** Phase 1 (scaffold). Health endpoint and dashboard shell only.
+**Status:** Phase 2 (host telemetry collectors). Not yet wired to a database or the dashboard.
 
 ## Requirements
 - Python 3.11+ (tested on 3.12 macOS, 3.13 Pi OS)
@@ -15,6 +15,23 @@ make setup
 make test && make lint
 make run          # builds UI, serves on http://127.0.0.1:8787
 ```
+
+## Live telemetry check (no API or database needed)
+```bash
+.venv/bin/python -m sentinelpi.collectors            # everything
+.venv/bin/python -m sentinelpi.collectors metrics    # or: processes | ports
+```
+Each collector reports a status (`ok`, `degraded`, `unavailable`, `error`) plus any optional
+fields it could not provide. What differs by host:
+
+| | Raspberry Pi (Linux) | macOS |
+|---|---|---|
+| CPU / memory / disk / uptime / network | yes | yes |
+| Temperature | yes (sysfs / psutil) | not available |
+| Processes | yes (own + others, name only) | yes |
+| Listening ports | yes; process shown only for your own sockets | via `lsof` fallback: TCP only, your own processes (`degraded`) |
+
+Privacy: process command lines, environment and working directories are never read.
 
 ## Development (two terminals)
 ```bash

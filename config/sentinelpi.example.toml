@@ -5,3 +5,8 @@ port = 8787
 
 [storage]
 db_path = "data/sentinelpi.db"
+
+[collection]
+disk_path = "/"        # filesystem whose usage is reported
+process_limit = 50     # top-N processes kept per snapshot (1-500)
+port_limit = 200       # max listening ports kept per snapshot (1-1000)
