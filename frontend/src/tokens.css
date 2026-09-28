@@ -1,0 +1,30 @@
+/* Design tokens: single source of truth for the dashboard look. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #14171c;
+  --text-muted: #5b6472;
+  --border: #dfe3e8;
+  --ok: #1a7f4b;
+  --warn: #b26a00;
+  --crit: #c62828;
+  --radius: 10px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1216;
+    --surface: #171b21;
+    --text: #e8ebef;
+    --text-muted: #9aa4b2;
+    --border: #2a303a;
+    --ok: #4cc38a;
+    --warn: #e0a030;
+    --crit: #ff6b6b;
+  }
+}
+body { margin: 0; background: var(--bg); color: var(--text); }

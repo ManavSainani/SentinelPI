@@ -1,0 +1,7 @@
+# Copy to config/sentinelpi.toml and point SENTINELPI_CONFIG at it.
+[server]
+host = "127.0.0.1"   # loopback only. Changing this exposes an API with NO auth yet.
+port = 8787
+
+[storage]
+db_path = "data/sentinelpi.db"

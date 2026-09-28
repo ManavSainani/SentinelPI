@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Runtime data and secrets (never commit)
+data/
+*.db
+*.db-journal
+.env
+config/sentinelpi.toml
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,12 @@
+.page { max-width: 720px; margin: 0 auto; padding: var(--space-4); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+.title { margin: 0 0 var(--space-3); }
+.row { display: flex; justify-content: space-between; padding: var(--space-1) 0; }
+.muted { color: var(--text-muted); }
+.ok { color: var(--ok); font-weight: 600; }
+.crit { color: var(--crit); font-weight: 600; }
