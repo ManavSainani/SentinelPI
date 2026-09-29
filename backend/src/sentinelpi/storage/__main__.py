@@ -14,8 +14,10 @@ import time
 from datetime import timedelta
 
 from sentinelpi.collectors import HostCollectors
+from sentinelpi.collectors.auth_logs import build_auth_collector
 from sentinelpi.config import load_settings
 from sentinelpi.storage import events_repo
+from sentinelpi.storage.auth_ingest import poll_auth_logs
 from sentinelpi.storage.db import Database
 from sentinelpi.storage.ingest import store_telemetry
 from sentinelpi.storage.retention import db_used_bytes, run_retention
@@ -30,6 +32,7 @@ _TABLES = (
     "process_snapshots",
     "listening_ports",
     "detection_rules",
+    "collector_state",
 )
 
 
@@ -42,6 +45,7 @@ def main(argv: list[str] | None = None) -> int:
     seed = sub.add_parser("seed-events")
     seed.add_argument("count", nargs="?", type=int, default=25)
     sub.add_parser("prune")
+    sub.add_parser("poll-auth")
     args = parser.parse_args(argv)
 
     settings = load_settings()
@@ -72,6 +76,10 @@ def main(argv: list[str] | None = None) -> int:
         with db.session() as conn:
             inserted = events_repo.insert_events(conn, generate_events(count, start=start))
         print(f"inserted {inserted} synthetic events (source='test')")
+    elif args.command == "poll-auth":
+        with db.session() as conn:
+            report = poll_auth_logs(conn, build_auth_collector(settings.auth))
+        print(report.model_dump_json(indent=2))
     elif args.command == "prune":
         with db.session() as conn:
             print(run_retention(conn, settings.retention).model_dump_json(indent=2))

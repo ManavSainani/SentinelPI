@@ -21,7 +21,7 @@ TABLES = {
 
 def test_fresh_apply_then_idempotent(tmp_path):
     db = Database(tmp_path / "a.db")
-    assert db.migrate() == [1]
+    assert db.migrate() == [1, 2]
     assert db.migrate() == []
     with db.session() as c:
         names = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}

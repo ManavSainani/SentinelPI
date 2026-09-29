@@ -60,10 +60,20 @@ def insert_event(conn: sqlite3.Connection, event: Event) -> None:
     conn.execute(f"INSERT INTO events ({_COLUMNS}) VALUES (?,?,?,?,?,?,?,?,?,?,?)", _params(event))
 
 
-def insert_events(conn: sqlite3.Connection, events: Iterable[Event]) -> int:
-    rows = [_params(e) for e in events]
-    conn.executemany(f"INSERT INTO events ({_COLUMNS}) VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
-    return len(rows)
+def insert_events(
+    conn: sqlite3.Connection, events: Iterable[Event], *, ignore_duplicates: bool = False
+) -> int:
+    """Insert events; returns how many rows were actually stored.
+
+    With ignore_duplicates=True, events whose id already exists are skipped (used for log
+    ingestion, where ids are deterministic so re-reading a log entry is harmless).
+    """
+    verb = "INSERT OR IGNORE" if ignore_duplicates else "INSERT"
+    cur = conn.executemany(
+        f"{verb} INTO events ({_COLUMNS}) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        [_params(e) for e in events],
+    )
+    return cur.rowcount
 
 
 def get_event(conn: sqlite3.Connection, event_id: UUID | str) -> Event | None:

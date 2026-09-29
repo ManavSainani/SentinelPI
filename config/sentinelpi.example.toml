@@ -17,3 +17,9 @@ metrics_days = 7       # system metrics
 snapshot_days = 3      # process and listening-port snapshots
 incident_days = 90     # resolved / false-positive incidents; open ones are never auto-deleted
 max_db_mb = 256        # size target; oldest high-volume data is trimmed first
+
+[auth]
+journal_units = ["ssh.service", "sshd.service"]   # systemd units whose logs are read
+auth_log_paths = ["/var/log/auth.log", "/var/log/secure"]  # fallback if no journal
+initial_lookback_minutes = 15   # how far back the very first poll looks
+max_entries_per_poll = 1000

@@ -14,12 +14,12 @@ def cfg(tmp_path, monkeypatch):
 
 def test_migrate_then_status(capsys):
     assert main(["migrate"]) == 0
-    assert "[1]" in capsys.readouterr().out
+    assert "[1, 2]" in capsys.readouterr().out
     main(["migrate"])
     assert "already up to date" in capsys.readouterr().out
     main(["status"])
     out = capsys.readouterr().out
-    assert "schema version: 1" in out and "events: 0" in out
+    assert "schema version: 2" in out and "events: 0" in out
 
 
 def test_seed_prune_and_status(capsys):
@@ -43,3 +43,16 @@ def test_collect_once_stores_live_metrics(capsys):
     assert report["metrics_stored"] is True
     main(["status"])
     assert "system_metrics: 1" in capsys.readouterr().out
+
+
+def test_poll_auth_and_dry_run_produce_valid_reports(capsys):
+    main(["poll-auth"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["state"] in {"ok", "degraded", "unavailable", "error"}
+    main(["status"])
+    assert "collector_state:" in capsys.readouterr().out
+
+    from sentinelpi.collectors.__main__ import main as collectors_main
+
+    assert collectors_main(["auth"]) == 0
+    assert "status" in json.loads(capsys.readouterr().out)

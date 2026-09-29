@@ -3,7 +3,7 @@
 A local-first host monitoring and security-awareness dashboard. Full design in
 [`docs/MASTER_PROJECT_SPEC.md`](docs/MASTER_PROJECT_SPEC.md).
 
-**Status:** Phase 3 (SQLite storage, event model, retention). Collectors and storage work; no detection or dashboard data yet.
+**Status:** Phase 4 (SSH authentication log adapter). Events are collected and stored; no detection rules or dashboard data yet.
 
 ## Requirements
 - Python 3.11+ (tested on 3.12 macOS, 3.13 Pi OS)
@@ -58,6 +58,41 @@ incidents and their evidence are never auto-deleted.
 
 **Schema changes:** never edit an applied migration (it is checksummed); add the next
 `NNNN_name.sql` in `backend/src/sentinelpi/storage/migration_files/`.
+
+## SSH authentication events (Phase 4)
+```bash
+.venv/bin/python -m sentinelpi.collectors auth      # dry run: print parsed events, store nothing
+.venv/bin/python -m sentinelpi.storage poll-auth    # read new events and store them (+ cursor)
+```
+**Sources, in order:** the systemd journal (`journalctl`, only the `ssh.service`/`sshd.service`
+units), then `/var/log/auth.log` or `/var/log/secure`. The first readable one is used, and the
+status says which and why others were skipped. macOS has neither, so it reports `unavailable`.
+
+**Permissions:** reading the journal needs membership in the `adm` or `systemd-journal` group
+(check with `groups`). Reading it grants access to *all* system logs, not just SSH, so the
+packaged service will run as a dedicated non-root user with only that group. Without access the
+status tells you exactly this instead of silently returning nothing.
+
+**Captured:** failed logins, probes with unknown usernames, and successful logins. Everything
+else (disconnects, PAM duplicates, `Failed none` scanner noise) is ignored on purpose.
+
+**Privacy:** the attempted username is stored only if it is a real local account. Failed
+logins often contain typos or passwords typed into the username field, so for unknown users
+no name is stored or shown. Key fingerprints are dropped.
+
+**Trust and limits:**
+- Journal entries are accepted only if journald itself tagged them as coming from the ssh unit,
+  so a local user cannot forge SSH events with `logger`. Plain log files have no such
+  guarantee; prefer the journal.
+- One bad attempt can produce both an `auth.ssh_invalid_user` and an `auth.ssh_failed_login`
+  event. Both carry `src_port` so detection can count each connection once.
+- Event IDs are derived from the log entry, so re-reading a log can never create duplicates.
+
+**Safe live test** (only ever against your own Pi, over loopback or your own LAN):
+1. From your Mac: `ssh <user>@<pi-address>`, log in, then exit (creates a successful login).
+2. On the Pi: `ssh -o PubkeyAuthentication=no nosuchuser@127.0.0.1`, type a wrong password
+   twice, then press Ctrl+C (creates failed-login / unknown-user events).
+3. `poll-auth`, then `status`.
 
 ## Development (two terminals)
 ```bash
