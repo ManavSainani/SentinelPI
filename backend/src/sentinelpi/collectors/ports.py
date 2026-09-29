@@ -47,6 +47,9 @@ class PortSnapshot(BaseModel):
 def parse_lsof_fields(text: str) -> list[ListeningPort]:
     """Parse `lsof -F pcn` output (p=pid, c=command, n=name) into listening TCP ports."""
     ports: list[ListeningPort] = []
+    # lsof lists IPv4 and IPv6 listeners separately, and both print as "*:PORT", so
+    # identical entries are collapsed (same behavior as the psutil path).
+    seen: set[tuple[str, int, int | None]] = set()
     pid: int | None = None
     command: str | None = None
     for line in text.splitlines():
@@ -69,10 +72,14 @@ def parse_lsof_fields(text: str) -> list[ListeningPort]:
                 continue
             if not 1 <= port <= 65535:
                 continue
+            address = address.strip("[]")
+            if (address, port, pid) in seen:
+                continue
+            seen.add((address, port, pid))
             ports.append(
                 ListeningPort(
                     protocol="tcp",
-                    local_address=address.strip("[]"),
+                    local_address=address,
                     port=port,
                     pid=pid,
                     process_name=command,

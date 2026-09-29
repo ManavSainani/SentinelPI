@@ -25,10 +25,19 @@ class CollectionSettings(BaseModel):
     port_limit: int = Field(default=200, ge=1, le=1000)
 
 
+class RetentionSettings(BaseModel):
+    events_days: int = Field(default=14, ge=1, le=365)
+    metrics_days: int = Field(default=7, ge=1, le=90)  # high volume: pruned sooner
+    snapshot_days: int = Field(default=3, ge=1, le=30)  # process + port snapshots
+    incident_days: int = Field(default=90, ge=1, le=730)  # resolved/false-positive only
+    max_db_mb: int = Field(default=256, ge=8, le=4096)  # size target, see retention.py
+
+
 class Settings(BaseModel):
     server: ServerSettings = ServerSettings()
     storage: StorageSettings = StorageSettings()
     collection: CollectionSettings = CollectionSettings()
+    retention: RetentionSettings = RetentionSettings()
     # Built frontend (Vite output). Relative paths resolve from the working directory.
     frontend_dist: str = "frontend/dist"
 

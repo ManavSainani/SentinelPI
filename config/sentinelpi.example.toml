@@ -10,3 +10,10 @@ db_path = "data/sentinelpi.db"
 disk_path = "/"        # filesystem whose usage is reported
 process_limit = 50     # top-N processes kept per snapshot (1-500)
 port_limit = 200       # max listening ports kept per snapshot (1-1000)
+
+[retention]
+events_days = 14       # events older than this are pruned (unless tied to a kept incident)
+metrics_days = 7       # system metrics
+snapshot_days = 3      # process and listening-port snapshots
+incident_days = 90     # resolved / false-positive incidents; open ones are never auto-deleted
+max_db_mb = 256        # size target; oldest high-volume data is trimmed first

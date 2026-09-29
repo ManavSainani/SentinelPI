@@ -135,3 +135,13 @@ def test_unexpected_error_reports_type_only():
 def test_lsof_parser_skips_connections_and_garbage():
     ports = parse_lsof_fields(LSOF + "nnotaport\nn*:99999\nn*:abc\n")
     assert len(ports) == 3  # the "->" line, bad port, and non-numeric port are ignored
+
+
+def test_lsof_dual_stack_duplicates_collapsed():
+    # Real macOS output: one process listening on IPv4 and IPv6 prints "*:5000" twice.
+    text = "p1112\ncControlCenter\nf9\nn*:5000\nf10\nn*:5000\nf11\nn*:7000\nf12\nn*:7000\n"
+    ports = parse_lsof_fields(text)
+    assert [(p.local_address, p.port, p.pid) for p in ports] == [
+        ("*", 5000, 1112),
+        ("*", 7000, 1112),
+    ]

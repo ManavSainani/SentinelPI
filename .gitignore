@@ -21,3 +21,5 @@ config/sentinelpi.toml
 .DS_Store
 .idea/
 .vscode/
+*.db-wal
+*.db-shm
