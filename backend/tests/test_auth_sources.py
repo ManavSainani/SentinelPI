@@ -181,15 +181,21 @@ def test_legacy_syslog_uses_local_time_and_current_year(tz_new_york):
     assert (host, ident, msg) == ("manavpi", "sshd", MSG)
 
 
+def local_as_utc(*args):
+    """A wall-clock time in the machine's local zone, expressed in UTC (works in any TZ)."""
+    return datetime(*args).astimezone(UTC)
+
+
 def test_single_digit_day_and_no_pid():
     ts, _, ident, _ = parse_syslog_line("Sep  8 07:00:01 pi sshd-session: hello", NOW)
-    assert ident == "sshd-session" and ts.month == 9 and ts.day == 8
+    assert ident == "sshd-session" and ts == local_as_utc(2026, 9, 8, 7, 0, 1)
 
 
 def test_december_line_read_in_january_belongs_to_last_year():
     jan = datetime(2027, 1, 2, 0, 5, tzinfo=UTC)
     ts, *_ = parse_syslog_line("Dec 31 23:59:59 pi sshd[1]: x", jan)
-    assert ts.year == 2026
+    # The year is decided in local time; comparing the UTC year would depend on the zone.
+    assert ts == local_as_utc(2026, 12, 31, 23, 59, 59)
 
 
 def test_iso_timestamps_with_offsets():
