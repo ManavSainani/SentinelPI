@@ -104,6 +104,12 @@ def run_retention(
         "DELETE FROM incidents WHERE status IN ('resolved','false_positive') AND updated_at < ?",
         (cutoff(policy.incident_days),),
     )
+    # Cooldown records are only needed for as long as a cooldown can last (max 7 days).
+    delete(
+        "detection_state",
+        "DELETE FROM detection_state WHERE last_fired_at < ?",
+        (cutoff(policy.events_days + 7),),
+    )
     delete(
         "events",
         f"DELETE FROM events WHERE timestamp < ? AND {_UNPROTECTED}",

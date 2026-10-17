@@ -33,6 +33,8 @@ _TABLES = (
     "listening_ports",
     "detection_rules",
     "collector_state",
+    "detection_state",
+    "port_baseline",
 )
 
 
@@ -65,7 +67,9 @@ def main(argv: list[str] | None = None) -> int:
                 count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
                 print(f"  {table}: {count}")
     elif args.command == "collect-once":
-        collectors = HostCollectors(settings.collection)
+        collectors = HostCollectors(
+            settings.collection, watchlist=settings.detection.watchlist.process_names
+        )
         time.sleep(1.0)  # let CPU counters accumulate
         telemetry = collectors.collect_all()
         with db.session() as conn:

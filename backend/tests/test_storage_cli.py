@@ -14,12 +14,12 @@ def cfg(tmp_path, monkeypatch):
 
 def test_migrate_then_status(capsys):
     assert main(["migrate"]) == 0
-    assert "[1, 2]" in capsys.readouterr().out
+    assert "[1, 2, 3]" in capsys.readouterr().out
     main(["migrate"])
     assert "already up to date" in capsys.readouterr().out
     main(["status"])
     out = capsys.readouterr().out
-    assert "schema version: 2" in out and "events: 0" in out
+    assert "schema version: 3" in out and "events: 0" in out
 
 
 def test_seed_prune_and_status(capsys):

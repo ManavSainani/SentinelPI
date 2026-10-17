@@ -3,7 +3,7 @@
 A local-first host monitoring and security-awareness dashboard. Full design in
 [`docs/MASTER_PROJECT_SPEC.md`](docs/MASTER_PROJECT_SPEC.md).
 
-**Status:** Phase 4 (SSH authentication log adapter). Events are collected and stored; no detection rules or dashboard data yet.
+**Status:** Phase 5 (detection engine and monitoring loop). The system now collects, stores and detects; incidents (Phase 6), the API (Phase 7) and the dashboard (Phase 8) are next.
 
 ## Requirements
 - Python 3.11+ (tested on 3.12 macOS, 3.13 Pi OS)
@@ -93,6 +93,52 @@ no name is stored or shown. Key fingerprints are dropped.
 2. On the Pi: `ssh -o PubkeyAuthentication=no nosuchuser@127.0.0.1`, type a wrong password
    twice, then press Ctrl+C (creates failed-login / unknown-user events).
 3. `poll-auth`, then `status`.
+
+## Detection and monitoring (Phase 5)
+```bash
+.venv/bin/python -m sentinelpi.monitor            # collect, poll logs, detect, prune; Ctrl+C stops
+.venv/bin/python -m sentinelpi.monitor --once     # run every job once and print the results
+.venv/bin/python -m sentinelpi.detection rules    # the rules and their effective thresholds
+.venv/bin/python -m sentinelpi.detection run      # evaluate all rules once, right now
+.venv/bin/python -m sentinelpi.detection score SP-001 SP-004   # preview a risk score
+```
+
+| Rule | Fires when | Default severity | Cooldown |
+|---|---|---|---|
+| SP-001 Repeated SSH failures | 5+ failed attempts from one IP within 5 minutes (inclusive) | High | 30 min per IP |
+| SP-002 New listening port | a protocol/port is absent from the approved baseline | Medium | 24 h per port |
+| SP-003 Sustained high CPU | every sample above 90% for a full 5-minute window | Low (Medium if average >= 98%) | 30 min |
+| SP-004 Unexpected process | a running process name is on the watchlist | Medium | 6 h per name |
+
+Every detection is stored as an event (`detection.*`) whose metadata holds the rule name, the
+exact trigger, an explanation, the evidence (SSH event IDs, ports, PIDs, CPU stats), the dedupe
+key and the risk points. Thresholds live in the `[detection.*]` sections of the config; unknown
+keys are rejected so a typo cannot silently leave a default in place.
+
+**Approving the port baseline (SP-002).** The rule stays "skipped" until you approve a baseline:
+```bash
+.venv/bin/python -m sentinelpi.storage collect-once
+.venv/bin/python -m sentinelpi.detection baseline capture    # shows the ports, asks to approve
+.venv/bin/python -m sentinelpi.detection baseline show
+```
+Capture it on a machine you trust, after it has been running normally for a few minutes. Re-run
+`capture` after you deliberately add a service.
+
+**How noise is controlled.** One persistent condition produces one alert per cooldown, not one
+per evaluation. Rules that lack enough data (stale snapshot, gaps in the CPU samples, no
+baseline) report *skipped* with the reason instead of guessing. A failing rule is isolated and
+reported by exception type only.
+
+**Limits worth knowing.**
+- Detection is a learning tool, not a guarantee. The risk score is a heuristic, not a probability.
+- Watchlist matching is by process name only. Command lines are never collected, and a renamed
+  binary will not match.
+- Linux truncates process names to 15 characters; longer watchlist entries match that prefix.
+- One bad SSH attempt can log both an "invalid user" and a "failed login" event; SP-001 counts
+  each connection's attempts once.
+- SP-002 on macOS sees TCP only; a baseline records which protocols it could see and never
+  treats an invisible protocol as new.
+- The `ignored_source_ips` allowlist is empty by default because an allowlist is a blind spot.
 
 ## Development (two terminals)
 ```bash

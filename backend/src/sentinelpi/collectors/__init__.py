@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from pydantic import BaseModel
 
 from sentinelpi.collectors.base import CollectionResult, CollectorState, CollectorStatus
@@ -18,10 +20,14 @@ class HostTelemetry(BaseModel):
 
 
 class HostCollectors:
-    def __init__(self, settings: CollectionSettings | None = None) -> None:
+    def __init__(
+        self,
+        settings: CollectionSettings | None = None,
+        watchlist: Iterable[str] = (),
+    ) -> None:
         s = settings or CollectionSettings()
         self.metrics = MetricsCollector(disk_path=s.disk_path)
-        self.processes = ProcessCollector(limit=s.process_limit)
+        self.processes = ProcessCollector(limit=s.process_limit, watchlist=watchlist)
         self.ports = PortCollector(limit=s.port_limit)
 
     def collect_all(self) -> HostTelemetry:

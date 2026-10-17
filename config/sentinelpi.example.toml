@@ -23,3 +23,51 @@ journal_units = ["ssh.service", "sshd.service"]   # systemd units whose logs are
 auth_log_paths = ["/var/log/auth.log", "/var/log/secure"]  # fallback if no journal
 initial_lookback_minutes = 15   # how far back the very first poll looks
 max_entries_per_poll = 1000
+
+[monitor]                       # how often the monitoring loop does each job (seconds)
+metrics_interval_seconds = 10
+snapshot_interval_seconds = 60  # processes + listening ports
+auth_interval_seconds = 15
+detection_interval_seconds = 30
+retention_interval_seconds = 3600
+
+[detection]
+max_snapshot_age_minutes = 10   # port/process data older than this is not judged
+
+[detection.ssh_failures]        # SP-001
+enabled = true
+threshold = 5                   # failed attempts from one IP...
+window_minutes = 5              # ...within this window (inclusive)
+cooldown_minutes = 30           # at most one alert per source IP per cooldown
+ignored_source_ips = []         # leave empty unless you fully control the address
+
+[detection.new_port]            # SP-002 (needs an approved baseline, see README)
+enabled = true
+protocols = ["tcp", "udp"]
+ignored_ports = []              # e.g. ["udp/5353"] to silence a noisy listener
+cooldown_minutes = 1440
+max_per_run = 20
+
+[detection.cpu]                 # SP-003
+enabled = true
+cpu_percent = 90                # strictly above this...
+window_minutes = 5              # ...for the whole window
+min_samples = 10
+max_gap_seconds = 60            # larger gaps mean the window is not covered: not judged
+high_cpu_percent = 98           # average at or above this is Medium, otherwise Low
+cooldown_minutes = 30
+
+[detection.watchlist]           # SP-004: exact, case-insensitive process names
+enabled = true
+process_names = ["nc", "ncat", "netcat", "nmap", "masscan", "hydra", "john", "xmrig", "minerd"]
+cooldown_minutes = 360
+
+[detection.scoring]             # heuristic risk points; a prioritization aid, not a probability
+ssh_failures = 35
+new_listening_port = 20
+watchlisted_process = 30
+sustained_cpu = 10
+independent_rule_bonus = 10     # added for each additional distinct rule in one incident
+band_medium = 25
+band_high = 50
+band_critical = 75

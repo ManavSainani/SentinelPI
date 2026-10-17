@@ -7,6 +7,7 @@ would be an explicit opt-in feature later, not a default.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
 
@@ -19,11 +20,13 @@ from sentinelpi.collectors.base import (
     make_status,
     utcnow,
 )
+from sentinelpi.watchlist import is_watchlisted, normalize_watchlist
 
 NAME = "processes"
 # Deliberately excludes cmdline, environ, exe, cwd, open_files, connections.
 _ATTRS = ["pid", "name", "username", "cpu_percent", "memory_percent"]
 _MAX_NAME = 64
+_MAX_WATCH_MATCHES = 50
 
 
 class ProcessInfo(BaseModel):
@@ -50,9 +53,15 @@ def _clean_name(name: str | None) -> str:
 
 
 class ProcessCollector:
-    def __init__(self, limit: int = 50, psutil_mod: Any = psutil) -> None:
+    def __init__(
+        self,
+        limit: int = 50,
+        psutil_mod: Any = psutil,
+        watchlist: Iterable[str] = (),
+    ) -> None:
         self._ps = psutil_mod
         self._limit = limit
+        self._watch = normalize_watchlist(watchlist)
         try:  # Prime per-process CPU counters so the first real sample is meaningful.
             for _ in self._ps.process_iter(["cpu_percent"]):
                 pass
@@ -86,11 +95,20 @@ class ProcessCollector:
             )
 
         items.sort(key=lambda p: (-(p.cpu_percent + p.memory_percent), p.pid))
+        kept = items[: self._limit]
+        # A watchlisted process must never be missed just because it is idle: matches are
+        # kept even when they fall outside the top-N by load.
+        kept_pids = {p.pid for p in kept}
+        extra = [
+            p
+            for p in items[self._limit :]
+            if is_watchlisted(p.name, self._watch) and p.pid not in kept_pids
+        ][:_MAX_WATCH_MATCHES]
         snapshot = ProcessSnapshot(
             timestamp=utcnow(),
             total_count=len(items),
             truncated=len(items) > self._limit,
-            processes=items[: self._limit],
+            processes=kept + extra,
         )
         detail = f"{restricted} process(es) had restricted fields" if restricted else None
         return CollectionResult[ProcessSnapshot](

@@ -27,7 +27,9 @@ def main(argv: list[str]) -> int:
     if which == "auth":
         print(build_auth_collector(settings.auth).poll({}).result.model_dump_json(indent=2))
         return 0
-    collectors = HostCollectors(settings.collection)
+    collectors = HostCollectors(
+        settings.collection, watchlist=settings.detection.watchlist.process_names
+    )
     time.sleep(1.0)  # let CPU counters accumulate so the first reading means something
     telemetry = collectors.collect_all()
     if which == "all":
