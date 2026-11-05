@@ -16,6 +16,13 @@ class ServerSettings(BaseModel):
     # Secure by default: loopback only. LAN exposure must be an explicit opt-in.
     host: str = "127.0.0.1"
     port: int = Field(default=8787, ge=1, le=65535)
+    # Host header allowlist (names only, no port). Blocks DNS-rebinding: a web page cannot
+    # make your browser talk to this API under an attacker-controlled name. If you bind to
+    # a LAN address, add the names you will use (e.g. "manavpi.local").
+    allowed_hosts: list[str] = ["localhost", "127.0.0.1", "::1"]
+    # Extra browser origins allowed to call state-changing endpoints. The page's own origin
+    # (same host:port as the request) is always allowed, which covers the Vite dev proxy.
+    allowed_origins: list[str] = []
 
 
 class StorageSettings(BaseModel):

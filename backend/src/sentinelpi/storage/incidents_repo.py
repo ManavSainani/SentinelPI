@@ -79,16 +79,12 @@ def resolve_id(conn: sqlite3.Connection, prefix: str) -> str | None:
     return rows[0]["id"] if rows else None
 
 
-def list_incidents(
-    conn: sqlite3.Connection,
-    *,
-    status: IncidentStatus | None = None,
-    min_severity: Severity | None = None,
-    since: datetime | None = None,  # on last_seen, inclusive
-    until: datetime | None = None,  # on last_seen, exclusive
-    limit: int = 50,
-) -> list[Incident]:
-    """Most recently active first, always bounded."""
+def _incident_filters(
+    status: IncidentStatus | None,
+    min_severity: Severity | None,
+    since: datetime | None,
+    until: datetime | None,
+) -> tuple[list[str], list[object]]:
     where: list[str] = []
     args: list[object] = []
     if status is not None:
@@ -104,12 +100,43 @@ def list_incidents(
     if until is not None:
         where.append("i.last_seen < ?")
         args.append(to_db(until))
+    return where, args
+
+
+def list_incidents(
+    conn: sqlite3.Connection,
+    *,
+    status: IncidentStatus | None = None,
+    min_severity: Severity | None = None,
+    since: datetime | None = None,  # on last_seen, inclusive
+    until: datetime | None = None,  # on last_seen, exclusive
+    after: tuple[str, str] | None = None,  # keyset cursor: (last_seen_db, id)
+    limit: int = 50,
+) -> list[Incident]:
+    """Most recently active first, always bounded."""
+    where, args = _incident_filters(status, min_severity, since, until)
+    if after is not None:
+        where.append("(i.last_seen < ? OR (i.last_seen = ? AND i.id < ?))")
+        args.extend([after[0], after[0], after[1]])
     clause = f"WHERE {' AND '.join(where)}" if where else ""
     args.append(max(1, min(int(limit), MAX_LIMIT)))
     rows = conn.execute(
         f"{_SELECT} {clause} ORDER BY i.last_seen DESC, i.id DESC LIMIT ?", args
     ).fetchall()
     return [_to_incident(r) for r in rows]
+
+
+def count_incidents(
+    conn: sqlite3.Connection,
+    *,
+    status: IncidentStatus | None = None,
+    min_severity: Severity | None = None,
+    since: datetime | None = None,
+    until: datetime | None = None,
+) -> int:
+    where, args = _incident_filters(status, min_severity, since, until)
+    clause = f"WHERE {' AND '.join(where)}" if where else ""
+    return int(conn.execute(f"SELECT COUNT(*) FROM incidents i {clause}", args).fetchone()[0])
 
 
 def count_by_status(conn: sqlite3.Connection) -> dict[str, int]:

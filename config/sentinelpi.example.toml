@@ -2,6 +2,8 @@
 [server]
 host = "127.0.0.1"   # loopback only. Changing this exposes an API with NO auth yet.
 port = 8787
+allowed_hosts = ["localhost", "127.0.0.1", "::1"]  # Host header allowlist (stops DNS rebinding)
+allowed_origins = []   # extra browser origins allowed to change incident status
 
 [storage]
 db_path = "data/sentinelpi.db"

@@ -189,6 +189,48 @@ are kept `incident_days` (90) and then removed together with their events and au
 - New evidence on an *acknowledged* incident updates it but does not re-open it.
 - The audit actor is `user` or `system`; there is no login yet, so it is not a person's identity.
 
+## API (Phase 7)
+Start it (the monitor is a separate process, see above):
+```bash
+.venv/bin/python -m sentinelpi.main        # http://127.0.0.1:8787 ; interactive docs at /api/docs
+```
+All routes live under `/api/v1`. Lists return `{items, total, limit, next_cursor}`; pass
+`next_cursor` back as `cursor` for the next page (rows are never skipped or repeated while new
+ones arrive). Timestamps are UTC ISO-8601; query timestamps must carry a timezone (`...Z`).
+Errors always look like `{"error": {"code", "message"}}` and never echo your input.
+
+| Route | Notes |
+|---|---|
+| `GET /health` | liveness, no host detail |
+| `GET /system/status` | one summary for the kiosk: `overall` (ok / warning / alert) with `reasons`, monitor heartbeat, latest metrics and their age, incident counts, `active_alert` (most severe *open* incident), `open_incidents` |
+| `GET /system/metrics` | `from`, `to`, `interval_seconds`; never more than 1000 points (averaged into buckets when needed) |
+| `GET /events`, `/events/{id}` | filters: `severity` (minimum), `type`, `source`, `source_ip`, `from`, `to`, `limit` (1-200), `cursor` |
+| `GET /incidents`, `/incidents/{id}` | filters: `status`, `severity`, `from`, `to`; detail includes score breakdown and timeline |
+| `PATCH /incidents/{id}` | body `{"status": "acknowledged" \| "resolved" \| "false_positive", "note": "..."}`; illegal transitions are `409` |
+| `GET /processes` | latest snapshot; `sort` = cpu / memory / name; command lines are never returned |
+| `GET /network/listeners` | latest snapshot; `protocol`, `exposed_only`; each row says whether it is reachable beyond loopback |
+| `GET /rules` | effective rule thresholds, read-only |
+
+**Why `overall` and `active_alert` exist.** The kiosk and, later, the status LEDs should not
+have to re-derive "is something wrong". `alert` means an open incident of High severity or
+above; `warning` means a lower-severity open incident, a stopped monitor, or stale metrics.
+Acknowledging an incident stops it being the active alert. This is a convenience summary, not
+a new judgement: it is computed only from the incidents and heartbeat you can already see.
+
+**Protections for a local, login-less API.** A Host-header allowlist (blocks DNS rebinding), a
+same-origin check plus JSON-only bodies on the one write endpoint (blocks other web pages from
+making your browser change an incident), no CORS, and interactive docs that switch themselves
+off if you bind to a non-loopback address. Reach it from your Mac with an SSH tunnel:
+`ssh -L 8787:127.0.0.1:8787 msainani@manavpi.local`, then open `http://localhost:8787`.
+
+**Limits worth knowing.**
+- There is no login. Anyone who can reach the port can read everything and change incident
+  status, which is why it binds to loopback. Exposing it to the network needs authentication
+  first (Phase 10).
+- `PATCH` records the actor as `user`; it is not an identity.
+- The status summary treats a missing heartbeat as "monitor not running", including on a fresh
+  install before the monitor has ever started.
+
 ## Development (two terminals)
 ```bash
 make dev-backend    # API :8787

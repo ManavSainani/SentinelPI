@@ -85,18 +85,14 @@ def count_events(conn: sqlite3.Connection) -> int:
     return int(conn.execute("SELECT COUNT(*) FROM events").fetchone()[0])
 
 
-def list_events(
-    conn: sqlite3.Connection,
-    *,
-    since: datetime | None = None,  # inclusive
-    until: datetime | None = None,  # exclusive
-    source: EventSource | None = None,
-    min_severity: Severity | None = None,
-    event_type: str | None = None,
-    source_ip: str | None = None,
-    limit: int = 100,
-) -> list[Event]:
-    """Newest first, always bounded (limit is clamped to 1..MAX_LIMIT)."""
+def _filters(
+    since: datetime | None,
+    until: datetime | None,
+    source: EventSource | None,
+    min_severity: Severity | None,
+    event_type: str | None,
+    source_ip: str | None,
+) -> tuple[list[str], list[object]]:
     where: list[str] = []
     args: list[object] = []
     if since is not None:
@@ -118,12 +114,48 @@ def list_events(
     if source_ip is not None:
         where.append("source_ip = ?")
         args.append(source_ip)
+    return where, args
+
+
+def list_events(
+    conn: sqlite3.Connection,
+    *,
+    since: datetime | None = None,  # inclusive
+    until: datetime | None = None,  # exclusive
+    source: EventSource | None = None,
+    min_severity: Severity | None = None,
+    event_type: str | None = None,
+    source_ip: str | None = None,
+    after: tuple[str, str] | None = None,  # keyset cursor: (timestamp_db, id) of the last row seen
+    limit: int = 100,
+) -> list[Event]:
+    """Newest first, always bounded (limit is clamped to 1..MAX_LIMIT). `after` continues a
+    previous page without skipping or repeating rows even while new events arrive."""
+    where, args = _filters(since, until, source, min_severity, event_type, source_ip)
+    if after is not None:
+        where.append("(timestamp < ? OR (timestamp = ? AND id < ?))")
+        args.extend([after[0], after[0], after[1]])
     clause = f"WHERE {' AND '.join(where)}" if where else ""
     args.append(max(1, min(int(limit), MAX_LIMIT)))
     rows = conn.execute(
         f"SELECT {_COLUMNS} FROM events {clause} ORDER BY timestamp DESC, id DESC LIMIT ?", args
     ).fetchall()
     return [_to_event(r) for r in rows]
+
+
+def count_filtered(
+    conn: sqlite3.Connection,
+    *,
+    since: datetime | None = None,
+    until: datetime | None = None,
+    source: EventSource | None = None,
+    min_severity: Severity | None = None,
+    event_type: str | None = None,
+    source_ip: str | None = None,
+) -> int:
+    where, args = _filters(since, until, source, min_severity, event_type, source_ip)
+    clause = f"WHERE {' AND '.join(where)}" if where else ""
+    return int(conn.execute(f"SELECT COUNT(*) FROM events {clause}", args).fetchone()[0])
 
 
 def list_events_unattached_detections(

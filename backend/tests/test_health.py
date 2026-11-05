@@ -5,7 +5,7 @@ from sentinelpi.main import create_app
 
 
 def test_health_ok():
-    client = TestClient(create_app(Settings()))
+    client = TestClient(create_app(Settings()), base_url="http://localhost")
     r = client.get("/api/health")
     assert r.status_code == 200
     body = r.json()
@@ -16,12 +16,16 @@ def test_health_ok():
 
 def test_serves_built_frontend(tmp_path):
     (tmp_path / "index.html").write_text("<html>hi</html>")
-    client = TestClient(create_app(Settings(frontend_dist=str(tmp_path))))
+    client = TestClient(
+        create_app(Settings(frontend_dist=str(tmp_path))), base_url="http://localhost"
+    )
     assert client.get("/").text == "<html>hi</html>"
     assert client.get("/api/health").status_code == 200  # API not shadowed
 
 
 def test_api_only_when_no_frontend(tmp_path):
-    client = TestClient(create_app(Settings(frontend_dist=str(tmp_path / "missing"))))
+    client = TestClient(
+        create_app(Settings(frontend_dist=str(tmp_path / "missing"))), base_url="http://localhost"
+    )
     assert client.get("/api/health").status_code == 200
     assert client.get("/").status_code == 404
