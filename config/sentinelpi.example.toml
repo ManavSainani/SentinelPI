@@ -24,6 +24,13 @@ auth_log_paths = ["/var/log/auth.log", "/var/log/secure"]  # fallback if no jour
 initial_lookback_minutes = 15   # how far back the very first poll looks
 max_entries_per_poll = 1000
 
+[incidents]                     # grouping detections into incidents (Phase 6)
+correlation_window_minutes = 30 # same host + same source (IP, or host-local) within this gap = one incident
+max_incident_hours = 24         # a long-running condition starts a fresh incident after this
+max_events_per_run = 500
+escalate_distinct_rules = 2     # SP-005: this many different rules in one incident => at least High
+open_incident_rules = ["SP-001", "SP-002", "SP-004"]  # SP-003 (CPU) only supports an existing incident
+
 [monitor]                       # how often the monitoring loop does each job (seconds)
 metrics_interval_seconds = 10
 snapshot_interval_seconds = 60  # processes + listening ports

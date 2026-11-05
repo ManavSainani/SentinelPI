@@ -124,3 +124,17 @@ def list_events(
         f"SELECT {_COLUMNS} FROM events {clause} ORDER BY timestamp DESC, id DESC LIMIT ?", args
     ).fetchall()
     return [_to_event(r) for r in rows]
+
+
+def list_events_unattached_detections(
+    conn: sqlite3.Connection, *, since: datetime, limit: int = 500
+) -> list[Event]:
+    """Detection events (`detection.*`) that belong to no incident yet, oldest first."""
+    rows = conn.execute(
+        f"SELECT {_COLUMNS} FROM events WHERE event_type LIKE 'detection.%'"
+        " AND incident_id IS NULL AND timestamp >= ?"
+        " AND id NOT IN (SELECT event_id FROM incident_events)"
+        " ORDER BY timestamp ASC, id ASC LIMIT ?",
+        (to_db(since), max(1, min(int(limit), MAX_LIMIT * 10))),
+    ).fetchall()
+    return [_to_event(r) for r in rows]

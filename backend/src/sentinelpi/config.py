@@ -169,6 +169,26 @@ class DetectionSettings(_Strict):
     scoring: ScoringSettings = ScoringSettings()
 
 
+class IncidentSettings(_Strict):
+    """How detections are grouped into incidents (spec section 7)."""
+
+    correlation_window_minutes: int = Field(default=30, ge=1, le=1440)
+    max_incident_hours: int = Field(default=24, ge=1, le=168)  # a chain never grows past this
+    max_events_per_run: int = Field(default=500, ge=1, le=5000)
+    escalate_distinct_rules: int = Field(default=2, ge=2, le=4)  # SP-005 trigger
+    # Rules whose detections may open an incident on their own. Any other rule's detections
+    # are supporting evidence: they join a matching open incident but never open one.
+    open_incident_rules: list[str] = ["SP-001", "SP-002", "SP-004"]
+
+    @field_validator("open_incident_rules")
+    @classmethod
+    def _known_rules(cls, v: list[str]) -> list[str]:
+        unknown = sorted(set(v) - {"SP-001", "SP-002", "SP-003", "SP-004"})
+        if unknown:
+            raise ValueError(f"unknown rule id(s): {', '.join(unknown)}")
+        return sorted(set(v))
+
+
 class MonitorSettings(_Strict):
     metrics_interval_seconds: int = Field(default=10, ge=2, le=3600)
     snapshot_interval_seconds: int = Field(default=60, ge=10, le=3600)  # processes + ports
@@ -184,6 +204,7 @@ class Settings(BaseModel):
     retention: RetentionSettings = RetentionSettings()
     auth: AuthSettings = AuthSettings()
     detection: DetectionSettings = DetectionSettings()
+    incidents: IncidentSettings = IncidentSettings()
     monitor: MonitorSettings = MonitorSettings()
     # Built frontend (Vite output). Relative paths resolve from the working directory.
     frontend_dist: str = "frontend/dist"

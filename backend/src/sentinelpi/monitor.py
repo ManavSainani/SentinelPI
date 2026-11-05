@@ -25,6 +25,7 @@ from sentinelpi.collectors import HostCollectors
 from sentinelpi.collectors.auth_logs import AuthLogCollector, build_auth_collector
 from sentinelpi.config import Settings, load_settings
 from sentinelpi.detection.engine import DetectionEngine
+from sentinelpi.incidents.correlator import IncidentCorrelator
 from sentinelpi.storage import state_repo
 from sentinelpi.storage.auth_ingest import poll_auth_logs
 from sentinelpi.storage.db import Database
@@ -59,6 +60,7 @@ class Monitor:
         collectors: HostCollectors | None = None,
         auth_collector: AuthLogCollector | None = None,
         engine: DetectionEngine | None = None,
+        correlator: IncidentCorrelator | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.settings = settings
@@ -69,6 +71,9 @@ class Monitor:
         )
         self.auth = auth_collector or build_auth_collector(settings.auth)
         self.engine = engine or DetectionEngine(settings.detection)
+        self.correlator = correlator or IncidentCorrelator(
+            settings.incidents, settings.detection.scoring
+        )
         m = settings.monitor
         self.tasks = [  # order matters on a combined cycle: collect, then judge
             _Task("metrics", m.metrics_interval_seconds, self._metrics),
@@ -106,8 +111,21 @@ class Monitor:
         for r in report.rules:
             if r.fired:
                 log.warning("%s fired %d detection(s)", r.rule_id, r.fired)
-        errors = [f"{r.rule_id}:{r.detail}" for r in report.rules if r.state == "error"]
-        return f"rule errors: {', '.join(errors)}" if errors else None
+        problems = [f"{r.rule_id}:{r.detail}" for r in report.rules if r.state == "error"]
+        # Correlation runs in its own session: if it fails, the detections above are kept
+        # and the next cycle simply tries again (it only looks at unattached detections).
+        try:
+            with self.db.session() as conn:
+                grouped = self.correlator.run(conn)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("incident correlation failed: %s", type(exc).__name__)
+            problems.append(f"incidents:{type(exc).__name__}")
+        else:
+            if grouped.created:
+                log.warning("opened %d new incident(s)", grouped.created)
+            if grouped.errors:
+                problems.append(f"incidents: {grouped.errors} detection(s) failed to correlate")
+        return f"problems: {', '.join(problems)}" if problems else None
 
     def _retention(self) -> str | None:
         with self.db.session() as conn:

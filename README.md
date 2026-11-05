@@ -140,6 +140,55 @@ reported by exception type only.
   treats an invisible protocol as new.
 - The `ignored_source_ips` allowlist is empty by default because an allowlist is a blind spot.
 
+## Incidents (Phase 6)
+The monitor now groups detections into incidents automatically (it runs right after each
+detection pass). You can also work with them from the command line:
+```bash
+.venv/bin/python -m sentinelpi.incidents list [--status open]
+.venv/bin/python -m sentinelpi.incidents show <id>       # details, score breakdown, timeline
+.venv/bin/python -m sentinelpi.incidents ack <id> [--note "..."]
+.venv/bin/python -m sentinelpi.incidents resolve <id> --note "blocked at the router"
+.venv/bin/python -m sentinelpi.incidents false-positive <id> --note "my own scan"
+.venv/bin/python -m sentinelpi.incidents run             # correlate right now
+```
+`<id>` is the full id or any unique prefix (the first 8 characters shown by `list`).
+
+**Correlation keys.** A detection joins the *active* (open or acknowledged) incident with the
+same **host** and the same **subject** whose activity is within `correlation_window_minutes`
+(default 30, inclusive) of it:
+- the subject is the **source IP** for detections that have one (SP-001);
+- the subject is **host-local** for detections without one (SP-002, SP-003, SP-004).
+
+Otherwise a new incident opens, if the rule is in `open_incident_rules` (default SP-001,
+SP-002, SP-004). SP-003 (CPU) only *supports* an existing incident, so a CPU spike on its own
+stays a plain event. An incident stops growing after `max_incident_hours` (default 24), so a
+long-running condition starts a fresh incident rather than one endless record.
+
+**SP-005, repeated suspicious activity.** When one incident collects `escalate_distinct_rules`
+(default 2) different rules, its severity is raised to at least High, the score gains +10 for
+each extra rule, and the escalation is written to the audit trail.
+
+**Score and severity.** The risk score is recomputed from the distinct rules attached (the
+same rule firing again adds nothing); the breakdown is stored and shown. Severity is the
+highest detection severity, raised by SP-005, and never lowered. Severity and the score band
+are separate on purpose: a single SSH burst is High severity but a 35 score (Medium band).
+
+**Lifecycle.** `open -> acknowledged -> resolved`, and `open`/`acknowledged -> false_positive`
+(or `open -> resolved` directly). Resolved and false-positive are final: if the activity comes
+back it opens a new incident, so history is never rewritten. Every change is audited with a
+timestamp, actor and optional note, and applied with a compare-and-swap so two writers cannot
+both win. Notes are redacted and limited to 500 characters.
+
+**Evidence is preserved.** The correlator only links existing events; it never edits or
+invents them. Active incidents and their events are never deleted by retention. Resolved ones
+are kept `incident_days` (90) and then removed together with their events and audit trail.
+
+**Limits worth knowing.**
+- An SSH incident (from an IP) and a host-local incident on the same host are not merged:
+  the detections carry no shared key. A person reading both can see the link by time.
+- New evidence on an *acknowledged* incident updates it but does not re-open it.
+- The audit actor is `user` or `system`; there is no login yet, so it is not a person's identity.
+
 ## Development (two terminals)
 ```bash
 make dev-backend    # API :8787
