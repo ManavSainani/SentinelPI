@@ -15,8 +15,9 @@ dev-backend:      ## API on 127.0.0.1:8787
 dev-frontend:     ## Vite dev server on :5173 (proxies /api)
 	cd frontend && npm run dev
 
-test:             ## Backend tests
+test:             ## Backend + frontend tests
 	cd backend && ../$(PY) -m pytest -q
+	cd frontend && npm test
 
 lint:             ## Ruff + ESLint + typecheck
 	cd backend && ../$(PY) -m ruff check . && ../$(PY) -m ruff format --check .

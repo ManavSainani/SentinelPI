@@ -1,0 +1,9 @@
+.band {
+  background: var(--surface); border: 1px solid var(--line); border-left-width: 6px;
+  border-radius: var(--radius); padding: var(--space-3); display: grid; gap: var(--space-3);
+}
+.top { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.text { display: flex; align-items: baseline; gap: var(--space-3); flex: 1 1 320px; flex-wrap: wrap; }
+.label { font-size: 1.5rem; letter-spacing: -0.01em; }
+.sentence { font-size: 1.05rem; overflow-wrap: anywhere; }
+.age { color: var(--text-muted); font-size: 0.87rem; white-space: nowrap; }

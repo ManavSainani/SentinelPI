@@ -1,0 +1,11 @@
+.loading { color: var(--text-muted); margin: var(--space-3) 0; }
+.error {
+  display: grid; gap: var(--space-2); justify-items: start;
+  border: 1px solid var(--sev-high); border-radius: var(--radius); padding: var(--space-3);
+  background: color-mix(in srgb, var(--sev-high) 10%, var(--surface));
+}
+.empty { color: var(--text-muted); margin: var(--space-3) 0; max-width: 60ch; }
+.stale {
+  border-left: 3px solid var(--sev-medium); padding: 6px var(--space-3);
+  background: var(--surface); margin: 0 0 var(--space-3); border-radius: 0 var(--radius) var(--radius) 0;
+}

@@ -3,7 +3,7 @@
 A local-first host monitoring and security-awareness dashboard. Full design in
 [`docs/MASTER_PROJECT_SPEC.md`](docs/MASTER_PROJECT_SPEC.md).
 
-**Status:** Phase 5 (detection engine and monitoring loop). The system now collects, stores and detects; incidents (Phase 6), the API (Phase 7) and the dashboard (Phase 8) are next.
+**Status:** Phase 8 (dashboard and kiosk view). The system collects, stores, detects, correlates incidents, serves an API and shows it all in a React dashboard; end-to-end verification (Phase 9) is next.
 
 ## Requirements
 - Python 3.11+ (tested on 3.12 macOS, 3.13 Pi OS)
@@ -230,6 +230,21 @@ off if you bind to a non-loopback address. Reach it from your Mac with an SSH tu
 - `PATCH` records the actor as `user`; it is not an identity.
 - The status summary treats a missing heartbeat as "monitor not running", including on a fresh
   install before the monitor has ever started.
+
+## Dashboard and kiosk view
+Open `http://localhost:8787/` (through the SSH tunnel when the Pi is the host). Pages use
+hash routes: `#/` overview, `#/incidents`, `#/events`, `#/system`, `#/processes`,
+`#/network`, `#/about`.
+
+- **Kiosk:** `#/kiosk` is a display-only, always-dark screen for a wall monitor. It shows
+  calm status normally, a banner for Medium/Low incidents, and goes full screen only for
+  High severity or above. It keeps showing the last known alert if the connection drops and
+  says when its data is stale. Acknowledge incidents from the normal dashboard.
+  Example launch: `chromium-browser --kiosk http://localhost:8787/#/kiosk`.
+- Severity is always shown as a shape, a word and a colour. Times are local, with UTC in the tooltip.
+- After pulling Phase 8, run `make setup` (or `cd frontend && npm install`) once: the
+  frontend gained test dependencies. `make test` now runs backend and frontend tests.
+- `frontend/dist/` is git-ignored; run `make build` on the Mac and rsync it to the Pi (below).
 
 ## Development (two terminals)
 ```bash

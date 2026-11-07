@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from sentinelpi.api.deps import check_range, get_conn, utc
 from sentinelpi.detection.rules.new_port import is_exposed
-from sentinelpi.storage import telemetry_repo
+from sentinelpi.storage import detection_repo, telemetry_repo
 from sentinelpi.storage.telemetry_repo import MAX_METRIC_ROWS
 from sentinelpi.timeutil import utc_now
 
@@ -134,10 +134,14 @@ class ListenerOut(BaseModel):
     process_name: str | None = None
     pid: int | None = None
     reachable_beyond_loopback: bool
+    # True/False once you have approved a port baseline (and it could observe this protocol);
+    # None when there is no baseline to compare with.
+    in_baseline: bool | None = None
 
 
 class ListenerList(BaseModel):
     observed_at: datetime | None
+    baseline_captured_at: datetime | None = None
     items: list[ListenerOut]
     total: int
     limit: int
@@ -155,11 +159,29 @@ def listeners(
     if snap is None:
         return ListenerList(observed_at=None, items=[], total=0, limit=limit)
     observed_at, ports = snap
+    meta = detection_repo.get_baseline_meta(conn)
+    known = detection_repo.get_baseline_keys(conn) if meta else set()
+
+    def in_baseline(p) -> bool | None:
+        if meta is None or p.protocol not in meta.protocols:
+            return None  # nothing to compare against, or the baseline could not see this protocol
+        return (p.protocol, p.port) in known
+
     items = [
-        ListenerOut(**p.model_dump(), reachable_beyond_loopback=is_exposed(p.local_address))
+        ListenerOut(
+            **p.model_dump(),
+            reachable_beyond_loopback=is_exposed(p.local_address),
+            in_baseline=in_baseline(p),
+        )
         for p in ports
         if (protocol is None or p.protocol == protocol)
     ]
     if exposed_only:
         items = [i for i in items if i.reachable_beyond_loopback]
-    return ListenerList(observed_at=observed_at, items=items[:limit], total=len(items), limit=limit)
+    return ListenerList(
+        observed_at=observed_at,
+        baseline_captured_at=meta.captured_at if meta else None,
+        items=items[:limit],
+        total=len(items),
+        limit=limit,
+    )

@@ -586,6 +586,38 @@ def test_listeners(client, db):
     assert empty.get("/api/v1/network/listeners").status_code == 503  # unmigrated file
 
 
+def test_listeners_report_baseline_membership(client, db):
+    from sentinelpi.storage import detection_repo
+
+    ports = [
+        ListeningPort(protocol="tcp", local_address="0.0.0.0", port=22, process_name="sshd"),  # noqa: S104
+        ListeningPort(protocol="tcp", local_address="0.0.0.0", port=8765, process_name="python"),  # noqa: S104
+        ListeningPort(protocol="udp", local_address="::", port=5353, process_name="avahi"),
+    ]
+    with db.session() as c:
+        telemetry_repo.insert_port_snapshot(
+            c, PortSnapshot(timestamp=utc_now(), total_count=3, truncated=False, ports=ports)
+        )
+    before = client.get("/api/v1/network/listeners").json()
+    assert before["baseline_captured_at"] is None
+    assert [p["in_baseline"] for p in before["items"]] == [None, None, None]
+
+    with db.session() as c:  # a TCP-only baseline holding port 22
+        detection_repo.replace_baseline(c, ports[:1], ["tcp"], utc_now())
+    after = client.get("/api/v1/network/listeners").json()
+    by_port = {p["port"]: p["in_baseline"] for p in after["items"]}
+    assert by_port == {22: True, 8765: False, 5353: None}  # UDP was not observable: no verdict
+    assert after["baseline_captured_at"] is not None
+
+
+def test_about_states_collection_and_retention(client):
+    body = client.get("/api/v1/system/about").json()
+    assert body["version"] == "0.1.0" and body["retention_days"]["events"] == 14
+    assert body["intervals_seconds"]["metrics"] == 10
+    assert any("Command lines" in x for x in body["never_collects"])
+    assert "hunter2" not in json.dumps(body)
+
+
 def test_rules(client):
     body = client.get("/api/v1/rules").json()
     assert [r["id"] for r in body["items"]] == ["SP-001", "SP-002", "SP-003", "SP-004"]
@@ -600,6 +632,7 @@ def test_every_documented_route_exists(client):
         ("/api/v1/health", "get"),
         ("/api/v1/system/status", "get"),
         ("/api/v1/system/metrics", "get"),
+        ("/api/v1/system/about", "get"),
         ("/api/v1/events", "get"),
         ("/api/v1/events/{event_id}", "get"),
         ("/api/v1/incidents", "get"),

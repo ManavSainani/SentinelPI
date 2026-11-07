@@ -1,0 +1,43 @@
+/* Sized in viewport units so it reads from across the room on any HDMI resolution. */
+.screen, .waiting, .alert {
+  min-height: 100vh; box-sizing: border-box; padding: 3vw 4vw; background: var(--bg); color: var(--text);
+  display: grid; align-content: start; gap: 3vh;
+}
+.top { display: grid; grid-template-columns: auto 1fr; gap: 4vw; align-items: center; }
+.time { font-size: clamp(3rem, 9vw, 9rem); font-weight: 650; line-height: 1; font-variant-numeric: tabular-nums; }
+.day { font-size: clamp(1rem, 2vw, 2rem); color: var(--text-muted); margin-top: 0.6vh; }
+.headline { border-left: 0.6vw solid; padding-left: 2vw; display: grid; gap: 0.6vh; font-size: clamp(1.1rem, 2.4vw, 2.6rem); }
+.headline strong { font-size: 1.3em; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(14em, 1fr)); gap: 2vw; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 1.6vw 2vw; }
+.tileLabel { font-size: clamp(1rem, 1.8vw, 1.8rem); color: var(--text-muted); }
+.tileValue { font-size: clamp(2.4rem, 6vw, 6rem); font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; margin-bottom: 1vh; }
+.lower { display: grid; grid-template-columns: 1fr 1fr; gap: 3vw; }
+.lower h2 { font-size: clamp(1.2rem, 2.2vw, 2.2rem); margin-bottom: 1.2vh; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.2vh; font-size: clamp(1rem, 1.9vw, 1.9rem); }
+.dim, .quiet { color: var(--text-muted); }
+.quiet { font-size: clamp(1rem, 1.9vw, 1.9rem); margin: 0; }
+.stale {
+  position: fixed; left: 0; right: 0; bottom: 0; margin: 0; z-index: 5; text-align: center;
+  background: var(--sev-medium); color: #1a1300; padding: 1.2vh 2vw; font-weight: 650; font-size: clamp(1rem, 1.8vw, 1.8rem);
+}
+.waiting { place-content: center; text-align: center; }
+.waiting h1 { font-size: clamp(2rem, 5vw, 5rem); }
+.waiting p { font-size: clamp(1.1rem, 2.2vw, 2.2rem); color: var(--text-muted); max-width: 40ch; margin: 0 auto; }
+
+.alert {
+  background: color-mix(in srgb, var(--sev) 22%, var(--bg));
+  border: 1.2vw solid var(--sev); align-content: center; gap: 3vh;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 50% { border-color: color-mix(in srgb, var(--sev) 45%, var(--bg)); } }
+.alertHead { display: flex; align-items: center; gap: 2vw; font-size: clamp(1.2rem, 2.6vw, 2.6rem); }
+.alertClock { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.alertTitle { font-size: clamp(2.4rem, 6.4vw, 7rem); line-height: 1.05; letter-spacing: -0.015em; }
+.alertFacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(12em, 1fr)); gap: 2vw; margin: 0; }
+.alertFacts div { display: grid; gap: 0.4vh; }
+.alertFacts dt { color: var(--text-muted); font-size: clamp(1rem, 1.8vw, 1.8rem); }
+.alertFacts dd { margin: 0; font-size: clamp(1.4rem, 3vw, 3rem); font-weight: 600; overflow-wrap: anywhere; }
+.reasons { margin: 0; padding-left: 1.4em; display: grid; gap: 1vh; font-size: clamp(1.1rem, 2.2vw, 2.2rem); }
+.alertFoot { margin: 0; color: var(--text-muted); font-size: clamp(1rem, 1.8vw, 1.8rem); }
+@media (max-width: 800px) { .top, .lower { grid-template-columns: 1fr; } }

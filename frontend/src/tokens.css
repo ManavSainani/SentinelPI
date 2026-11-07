@@ -1,30 +1,67 @@
-/* Design tokens: single source of truth for the dashboard look. */
+/* Design tokens: the single source of truth for how SentinelPi looks.
+   Cool slate surfaces, one steel-blue accent for things you can act on, and four status
+   colours that always travel with a shape and a word (never colour alone). */
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --text: #14171c;
-  --text-muted: #5b6472;
-  --border: #dfe3e8;
-  --ok: #1a7f4b;
-  --warn: #b26a00;
-  --crit: #c62828;
-  --radius: 10px;
+  color-scheme: dark light;
+  --bg: #0d1319;
+  --surface: #151d26;
+  --surface-2: #1b2531;
+  --line: #263444;
+  --text: #e4e9ef;
+  --text-muted: #9aa8b8;
+  --accent: #7fb3ea;
+  --accent-ink: #0d1319;
+
+  --ok: #5fd0b0;
+  --sev-info: #9aa8b8;
+  --sev-low: #7fb3ea;
+  --sev-medium: #f0b64a;
+  --sev-high: #ff6b57;
+  --sev-critical: #ff4d8d;
+
+  --radius: 6px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 16px;
   --space-4: 24px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --space-5: 40px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --focus: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1216;
-    --surface: #171b21;
-    --text: #e8ebef;
-    --text-muted: #9aa4b2;
-    --border: #2a303a;
-    --ok: #4cc38a;
-    --warn: #e0a030;
-    --crit: #ff6b6b;
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f2f5f8;
+    --surface: #ffffff;
+    --surface-2: #eaeff4;
+    --line: #d5dde6;
+    --text: #131a22;
+    --text-muted: #52606f;
+    --accent: #1f5fa8;
+    --accent-ink: #ffffff;
+    --ok: #137a5c;
+    --sev-info: #52606f;
+    --sev-low: #1f5fa8;
+    --sev-medium: #8f5a00;
+    --sev-high: #c4351f;
+    --sev-critical: #b0155a;
   }
 }
+*, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); }
+h1, h2, h3 { line-height: 1.2; margin: 0; font-weight: 650; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.15rem; }
+a { color: var(--accent); text-underline-offset: 3px; }
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 3px; }
+table, .tnum { font-variant-numeric: tabular-nums; }
+button, input, select, textarea { font: inherit; color: inherit; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

@@ -21,7 +21,10 @@ def connect(path: str | os.PathLike[str]) -> sqlite3.Connection:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     is_new = not p.exists() or p.stat().st_size == 0
-    conn = sqlite3.connect(p, timeout=5.0)
+    # One connection serves one request or task at a time, but a web framework may open it
+    # in one worker thread and finish the request in another, so the same-thread guard would
+    # raise ProgrammingError at random. Connections are never shared concurrently.
+    conn = sqlite3.connect(p, timeout=5.0, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     if is_new:
         # Must precede the first table, or the file can never shrink after pruning.

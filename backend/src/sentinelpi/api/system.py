@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
+from sentinelpi import __version__
 from sentinelpi.api.deps import get_conn, get_settings
 from sentinelpi.config import Settings
 from sentinelpi.events import Severity
@@ -132,4 +133,46 @@ def system_status(
         incidents=incidents_repo.count_by_status(conn),
         active_alert=AlertSummary.of(open_incidents[0]) if open_incidents else None,
         open_incidents=[AlertSummary.of(i) for i in open_incidents[:5]],
+    )
+
+
+class AboutInfo(BaseModel):
+    version: str
+    host: str
+    retention_days: dict[str, int]
+    intervals_seconds: dict[str, int]
+    collects: list[str]
+    never_collects: list[str]
+
+
+@router.get("/system/about", response_model=AboutInfo)
+def about(settings: Annotated[Settings, Depends(get_settings)]) -> AboutInfo:
+    """What this installation collects and keeps, stated from its own configuration."""
+    r, m = settings.retention, settings.monitor
+    return AboutInfo(
+        version=__version__,
+        host=socket.gethostname(),
+        retention_days={
+            "events": r.events_days,
+            "metrics": r.metrics_days,
+            "snapshots": r.snapshot_days,
+            "resolved_incidents": r.incident_days,
+        },
+        intervals_seconds={
+            "metrics": m.metrics_interval_seconds,
+            "processes_and_ports": m.snapshot_interval_seconds,
+            "ssh_logs": m.auth_interval_seconds,
+            "detection": m.detection_interval_seconds,
+        },
+        collects=[
+            "CPU, memory, disk, temperature and uptime",
+            "Process names, owners and resource use",
+            "Listening ports and the process that owns them",
+            "SSH sign-in events from the system log",
+        ],
+        never_collects=[
+            "Command lines and environment variables",
+            "File contents",
+            "Passwords or the user names typed in failed logins for accounts that do not exist",
+        ],
     )
