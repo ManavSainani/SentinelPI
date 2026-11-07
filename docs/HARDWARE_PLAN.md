@@ -43,6 +43,6 @@ sensor (looks like an HC-SR501; confirm from its board markings); jumper wires.
   standalone check script so each part is proven before the app depends on it.
 
 ## Suggested order
-1. Phases 6-8 as planned (incidents, API, dashboard).
+1. Phases 6-8 as planned (incidents, API, dashboard). Done.
 2. Kiosk mode on the HDMI display (also the Phase 10 packaging work).
 3. LEDs, then button, then PIR, then audio, each with a hardware check and fake-backend tests.

@@ -3,7 +3,25 @@
 A local-first host monitoring and security-awareness dashboard. Full design in
 [`docs/MASTER_PROJECT_SPEC.md`](docs/MASTER_PROJECT_SPEC.md).
 
-**Status:** Phase 8 (dashboard and kiosk view). The system collects, stores, detects, correlates incidents, serves an API and shows it all in a React dashboard; end-to-end verification (Phase 9) is next.
+**Status:** Phase 8 complete and verified on the Raspberry Pi. A real SSH attack produces an
+incident that shows on the dashboard and takes over the kiosk screen.
+
+## Progress
+
+| Phase | What | State |
+|---|---|---|
+| 0-1 | Environment, project scaffold | Done |
+| 2 | Telemetry collectors (CPU, memory, disk, network, processes, ports) | Done |
+| 3 | SQLite database, migrations, events | Done |
+| 4 | SSH auth log adapter (journald on the Pi, file fallback) | Done |
+| 5 | Detection engine (SP-001 to SP-004) and monitoring loop | Done |
+| 6 | Incident correlation and lifecycle | Done |
+| 7 | REST API (local only, SSH tunnel for remote viewing) | Done |
+| 8 | React dashboard and kiosk view | Done |
+| 9 | End-to-end verification | Next |
+| 10 | Packaging and hardening (systemd services, kiosk autostart) | Planned |
+| 11 | Docs and polish | Planned |
+| After 10 | Hardware: LEDs, acknowledge button, HC-SR501 PIR sensor, audio ([plan](docs/HARDWARE_PLAN.md)) | Planned |
 
 ## Requirements
 - Python 3.11+ (tested on 3.12 macOS, 3.13 Pi OS)
