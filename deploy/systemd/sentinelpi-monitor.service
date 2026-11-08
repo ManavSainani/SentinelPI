@@ -1,0 +1,44 @@
+[Unit]
+Description=SentinelPI monitor (collectors, detection, incidents)
+Documentation=https://github.com/ManavSainani/SentinelPI
+After=network.target systemd-journald.service
+
+[Service]
+Type=simple
+User=sentinelpi
+Group=sentinelpi
+# systemd-journal: read sshd's log entries. adm: read /var/log/auth.log where one exists.
+SupplementaryGroups=systemd-journal adm
+WorkingDirectory=/opt/sentinelpi
+Environment=SENTINELPI_CONFIG=/etc/sentinelpi/config.toml
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sentinelpi/venv/bin/python -m sentinelpi.monitor
+Restart=on-failure
+RestartSec=5
+# Stops the monitor reading and writing nothing for ever if it wedges.
+TimeoutStopSec=20
+StateDirectory=sentinelpi
+StateDirectoryMode=0750
+UMask=0027
+
+# Hardening: the monitor only needs to read the system and write its own database.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/sentinelpi
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

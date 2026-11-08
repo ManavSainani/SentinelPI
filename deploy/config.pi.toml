@@ -1,0 +1,11 @@
+# SentinelPI service configuration (installed to /etc/sentinelpi/config.toml).
+# Only paths and the essentials are set here; everything else uses the defaults documented in
+# config/sentinelpi.example.toml. Edit, then: sudo systemctl restart sentinelpi-monitor sentinelpi-api
+frontend_dist = "/opt/sentinelpi/frontend/dist"
+
+[server]
+host = "127.0.0.1"   # loopback only: the API has no login. View remotely through an SSH tunnel.
+port = 8787
+
+[storage]
+db_path = "/var/lib/sentinelpi/sentinelpi.db"

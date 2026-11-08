@@ -1,0 +1,44 @@
+[Unit]
+Description=SentinelPI API and dashboard (127.0.0.1 only)
+Documentation=https://github.com/ManavSainani/SentinelPI
+# Started after the monitor so the first database migration is never raced.
+After=network.target sentinelpi-monitor.service
+Wants=sentinelpi-monitor.service
+
+[Service]
+Type=simple
+User=sentinelpi
+Group=sentinelpi
+WorkingDirectory=/opt/sentinelpi
+Environment=SENTINELPI_CONFIG=/etc/sentinelpi/config.toml
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sentinelpi/venv/bin/python -m sentinelpi.main
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+StateDirectory=sentinelpi
+StateDirectoryMode=0750
+UMask=0027
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/sentinelpi
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

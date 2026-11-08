@@ -18,8 +18,8 @@ incident that shows on the dashboard and takes over the kiosk screen.
 | 6 | Incident correlation and lifecycle | Done |
 | 7 | REST API (local only, SSH tunnel for remote viewing) | Done |
 | 8 | React dashboard and kiosk view | Done |
-| 9 | End-to-end verification (demo + benchmark tool) | Built; Pi gate pending |
-| 10 | Packaging and hardening (systemd services, kiosk autostart) | Planned |
+| 9 | End-to-end verification (demo + benchmark tool) | Done |
+| 10 | Packaging and hardening (systemd services, kiosk autostart) | Built; Pi gate pending |
 | 11 | Docs and polish | Planned |
 | After 10 | Hardware: LEDs, acknowledge button, HC-SR501 PIR sensor, audio ([plan](docs/HARDWARE_PLAN.md)) | Planned |
 
@@ -282,6 +282,10 @@ the Pi, with default (realistic) intervals.
 
 Dashboard refresh: the kiosk polls every 5 s (even in a hidden tab); other pages poll more slowly
 and pause while hidden.
+
+## Running as a service
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): `sudo deploy/install.sh` installs two hardened
+systemd services; `deploy/kiosk/install-kiosk.sh` opens the kiosk on the Pi's monitor at boot.
 
 ## Development (two terminals)
 ```bash
