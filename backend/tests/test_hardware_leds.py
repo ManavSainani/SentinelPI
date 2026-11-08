@@ -83,3 +83,11 @@ def test_pins_command_prints_the_wiring(capsys):
 def test_check_leds_command_runs_against_mock_pins(mock_pins, capsys):
     assert main(["check-leds", "--seconds", "0.5"]) == 0
     assert "done: all off" in capsys.readouterr().out
+
+
+def test_probe_reports_without_crashing(mock_pins, capsys):
+    from sentinelpi.hardware.__main__ import probe
+
+    probe()  # result depends on the machine; it must print a verdict, never raise
+    out = capsys.readouterr().out
+    assert "gpiozero 2." in out and "RESULT:" in out

@@ -39,10 +39,11 @@ def print_pins(h: HardwareSettings) -> None:
 def probe() -> int:
     ok = True
     try:
-        import gpiozero
+        from importlib.metadata import version
+
         from gpiozero import Device
 
-        print(f"gpiozero {gpiozero.__version__}")
+        print(f"gpiozero {version('gpiozero')}")
         try:
             factory = Device.ensure_pin_factory()
             print(f"pin factory: {type(factory).__name__}")

@@ -17,18 +17,33 @@ in brackets. Change them in `[hardware]` in the config if you prefer others.
 **Power the Pi off and unplug it before wiring.** (`sudo poweroff`, wait for the green light to
 stop, then unplug.) Keep the ribbon cable's red stripe on pin 1 end.
 
-For each LED (long leg is positive, short leg is negative):
-```
-GPIO pin ---- 220 ohm resistor ---- LED long leg
-                                    LED short leg ---- ground rail (to a GND pin)
-```
-1. Run one jumper from a GND pin on the breakout to the breadboard's ground rail.
-2. Put the three LEDs in separate rows. Short legs to the ground rail (a short jumper each, or the rail row itself).
-3. Put one 220 ohm resistor between each LED's long-leg row and the row you wire to its GPIO pin.
-4. Jumpers: GPIO17 to the green LED's resistor, GPIO27 to yellow, GPIO22 to red.
+Your breadboard has the Pi's T-shaped breakout plugged into the top rows, straddling the centre
+channel. Each breakout pin owns one numbered row. Holes A-D in a row connect to that row's pin
+on the left side of the breakout (F-J on the right side), so you can plug a wire into any free
+hole beside the pin. Rows 24 and below are free.
 
-A resistor in each LED's path is what stops it burning out (and drawing too much from the pin).
-At 3.3 V each LED takes roughly 5 to 6 mA.
+**Part A: build three identical LED circuits (no Pi wires yet).** Left half, columns A-E.
+Rows are numbered on the breadboard's edge.
+
+| LED | Resistor | LED legs | Ground jumper |
+|---|---|---|---|
+| Green | row 26 col B to row 28 col B | long leg row 28 col C, short leg row 29 col C | row 29 col D to the left blue (-) rail |
+| Yellow | row 32 col B to row 34 col B | long leg row 34 col C, short leg row 35 col C | row 35 col D to the left blue (-) rail |
+| Red | row 38 col B to row 40 col B | long leg row 40 col C, short leg row 41 col C | row 41 col D to the left blue (-) rail |
+
+The long leg is the positive one; if you cannot tell, it is the leg that is not flat against the
+LED's rim. The current path is: GPIO jumper (row 26/32/38 col A) -> resistor -> LED -> rail.
+
+**Part B: ground.** One jumper from any breakout row labelled GND (hole A-D beside it) to the
+same left blue (-) rail. Some long breadboards split their rails halfway down; if no LED lights,
+that is the first thing to suspect.
+
+**Part C: the three GPIO jumpers.** Read the tiny labels printed on the breakout beside each
+row. A jumper from the row labelled 17 to green's row 26 col A, 27 to yellow's row 32 col A, and
+22 to red's row 38 col A. If a label is hard to read, count from a clearly labelled neighbour;
+the physical pin numbers in the table above (11, 13, 15) are the order on the Pi's header. A
+wrong pin cannot hurt anything here, because every path has a resistor, but the LED will not
+respond to the check tool.
 
 ### Check it
 ```bash
