@@ -62,6 +62,24 @@ sudo deploy/uninstall.sh          # keeps data; add --purge to delete everything
 View the dashboard from the Mac through the tunnel as before:
 `ssh -L 8787:127.0.0.1:8787 msainani@manavpi.local`.
 
+## Backup, restore and uninstall
+Backups use SQLite's online backup, so they are safe while the monitor runs, and are verified
+after writing.
+```bash
+sudo -u sentinelpi env SENTINELPI_CONFIG=/etc/sentinelpi/config.toml \
+  /opt/sentinelpi/venv/bin/python -m sentinelpi.storage backup /var/lib/sentinelpi/backup-$(date +%F).db
+```
+Copy it off the Pi (`scp`) if it matters. To restore, stop the services first; the database
+being replaced is kept next to it as `*.before-restore-<time>`:
+```bash
+sudo systemctl stop sentinelpi-api sentinelpi-monitor
+sudo -u sentinelpi env SENTINELPI_CONFIG=/etc/sentinelpi/config.toml \
+  /opt/sentinelpi/venv/bin/python -m sentinelpi.storage restore /var/lib/sentinelpi/backup-DATE.db --replace
+sudo systemctl start sentinelpi-monitor sentinelpi-api
+```
+A backup from a newer SentinelPI than the installed one is refused. Uninstall with
+`sudo deploy/uninstall.sh` (keeps data) or `--purge` (removes data, config and the account).
+
 ## Not done here
 Binding to the LAN needs authentication first; the API deliberately has none. Audio and GPIO
 come in the hardware phase.

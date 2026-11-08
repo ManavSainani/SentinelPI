@@ -1,30 +1,59 @@
 # SentinelPi
 
-A local-first host monitoring and security-awareness dashboard. Full design in
-[`docs/MASTER_PROJECT_SPEC.md`](docs/MASTER_PROJECT_SPEC.md).
+A local-first host monitoring and security-awareness dashboard for a Raspberry Pi. It watches
+the machine it runs on, notices a few kinds of suspicious activity, groups related signals into
+incidents you can acknowledge and resolve, and shows it all on a dashboard and a wall-mounted
+kiosk screen that goes full screen when something serious happens.
 
-**Status:** Phase 8 complete and verified on the Raspberry Pi. A real SSH attack produces an
-incident that shows on the dashboard and takes over the kiosk screen.
+> **This is a learning and portfolio project, not a security product.** It detects and
+> explains; it never blocks or changes anything. Run it only on machines you own.
 
-## Progress
+![Kiosk alert](docs/img/kiosk-alert.png)
 
-| Phase | What | State |
+*Screenshots in this repository are taken from a demo stack with synthetic data on a
+development machine. Hardware figures are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).*
+
+## What it does
+- **Collects** CPU, memory, disk, temperature, processes, listening ports, and SSH sign-in events (journald on the Pi, `auth.log` elsewhere).
+- **Detects** with five documented rules: SP-001 repeated SSH failures, SP-002 new listening port (against an approved baseline), SP-003 sustained high CPU, SP-004 watchlisted process names, and SP-005 escalation when two different rules agree.
+- **Correlates** detections into incidents with evidence, a risk score, a lifecycle (open, acknowledged, resolved, false positive) and an audit trail.
+- **Shows** a React dashboard (overview, incidents, events, system, processes, network, about) and a kiosk view (`#/kiosk`).
+- **Runs unattended** as two hardened systemd services with Chromium kiosk autostart.
+
+| Dashboard | Incident detail |
+|---|---|
+| ![Overview](docs/img/overview-dark.png) | ![Incident](docs/img/incident-detail.png) |
+
+| Incidents | Phone | Kiosk, calm |
 |---|---|---|
-| 0-1 | Environment, project scaffold | Done |
-| 2 | Telemetry collectors (CPU, memory, disk, network, processes, ports) | Done |
-| 3 | SQLite database, migrations, events | Done |
-| 4 | SSH auth log adapter (journald on the Pi, file fallback) | Done |
-| 5 | Detection engine (SP-001 to SP-004) and monitoring loop | Done |
-| 6 | Incident correlation and lifecycle | Done |
-| 7 | REST API (local only, SSH tunnel for remote viewing) | Done |
-| 8 | React dashboard and kiosk view | Done |
-| 9 | End-to-end verification (demo + benchmark tool) | Done |
-| 10 | Packaging and hardening (systemd services, kiosk autostart) | Built; Pi gate pending |
-| 11 | Docs and polish | Planned |
-| After 10 | Hardware: LEDs, acknowledge button, HC-SR501 PIR sensor, audio ([plan](docs/HARDWARE_PLAN.md)) | Planned |
+| ![Incidents](docs/img/incidents.png) | ![Phone](docs/img/phone.png) | ![Kiosk calm](docs/img/kiosk-calm.png) |
+
+## Goals and non-goals
+Goals: a complete, honest, tested vertical slice from log line to alert on a small device, with
+privacy by default (loopback only, no passwords or made-up usernames stored).
+Non-goals: blocking or remediation, multi-host fleets, authentication and remote access, malware
+analysis, replacing a real IDS.
+
+## Documentation
+| | |
+|---|---|
+| [Architecture](docs/ARCHITECTURE.md) | components, data flow diagrams, design decisions |
+| [Deployment](docs/DEPLOYMENT.md) | systemd services, kiosk, backup, restore, uninstall |
+| [Threat model](docs/THREAT_MODEL.md) | what it defends, trusts and does not cover |
+| [Limitations](docs/LIMITATIONS.md) | honest list of what it does not do |
+| [Testing](docs/TESTING.md) | test counts, coverage, how to reproduce |
+| [Performance](docs/PERFORMANCE.md) | measured on a Raspberry Pi 4 |
+| [Demo script](docs/DEMO.md) | a 5-minute walkthrough |
+| [Hardware plan](docs/HARDWARE_PLAN.md) | LEDs, button, PIR sensor, audio (planned) |
+| [Original spec](docs/MASTER_PROJECT_SPEC.md) | the design this follows |
+
+## Status
+Phases 0-10 are verified on the Pi; Phase 11 (documentation and polish) is complete. Next is the optional hardware layer (LEDs, acknowledge button,
+HC-SR501 motion sensor, audio), which is planned but not built.
 
 ## Requirements
-- Python 3.11+ (tested on 3.12 macOS, 3.13 Pi OS)
+- Python 3.11+ (tested on 3.12 on macOS and 3.13 on the Pi)
+- Tested hardware: Raspberry Pi 4 Model B (4 GB), Raspberry Pi OS desktop, kernel 6.12, systemd journal
 - Node 20+ (only needed on the machine that builds the frontend)
 
 ## Quick start (macOS or Pi)

@@ -5,19 +5,24 @@ status             schema version, row counts, size
 collect-once       collect one telemetry snapshot from this host and store it
 seed-events [N]    insert N synthetic events (source="test"), default 25
 prune              run the retention job now
+backup DEST        write a verified copy of the database (safe while the monitor runs)
+restore SRC [--replace]   put a backup in place (stop the services first; old DB is kept)
 """
 
 from __future__ import annotations
 
 import argparse
+import sys
 import time
 from datetime import timedelta
+from pathlib import Path
 
 from sentinelpi.collectors import HostCollectors
 from sentinelpi.collectors.auth_logs import build_auth_collector
 from sentinelpi.config import load_settings
 from sentinelpi.storage import events_repo
 from sentinelpi.storage.auth_ingest import poll_auth_logs
+from sentinelpi.storage.backup import BackupError, backup_database, restore_database
 from sentinelpi.storage.db import Database
 from sentinelpi.storage.ingest import store_telemetry
 from sentinelpi.storage.retention import db_used_bytes, run_retention
@@ -48,9 +53,30 @@ def main(argv: list[str] | None = None) -> int:
     seed.add_argument("count", nargs="?", type=int, default=25)
     sub.add_parser("prune")
     sub.add_parser("poll-auth")
+    bk = sub.add_parser("backup")
+    bk.add_argument("dest", type=Path)
+    rs = sub.add_parser("restore")
+    rs.add_argument("source", type=Path)
+    rs.add_argument("--replace", action="store_true")
     args = parser.parse_args(argv)
 
     settings = load_settings()
+    if args.command in {"backup", "restore"}:  # these must not create or migrate the live DB
+        try:
+            if args.command == "backup":
+                version = backup_database(Path(settings.storage.db_path), args.dest)
+                print(f"backup written to {args.dest} (schema version {version}, verified)")
+            else:
+                kept = restore_database(
+                    args.source, Path(settings.storage.db_path), replace=args.replace
+                )
+                print(f"restored {args.source} to {settings.storage.db_path}")
+                if kept:
+                    print(f"the previous database was kept at {kept}")
+        except BackupError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        return 0
     db = Database(settings.storage.db_path)
     applied = db.migrate()  # idempotent; every command starts from a current schema
 
