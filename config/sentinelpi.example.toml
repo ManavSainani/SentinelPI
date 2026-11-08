@@ -80,3 +80,11 @@ independent_rule_bonus = 10     # added for each additional distinct rule in one
 band_medium = 25
 band_high = 50
 band_critical = 75
+
+[hardware]                      # Raspberry Pi pins, BCM numbering (docs/HARDWARE.md)
+enabled = false                 # the status loop that drives the LEDs comes in a later step
+green_led_pin = 17              # physical pin 11
+yellow_led_pin = 27             # physical pin 13
+red_led_pin = 22                # physical pin 15
+button_pin = 23                 # physical pin 16 (acknowledge button; not wired yet)
+pir_pin = 24                    # physical pin 18 (HC-SR501 output; not wired yet)

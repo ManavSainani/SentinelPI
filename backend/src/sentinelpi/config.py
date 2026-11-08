@@ -204,6 +204,30 @@ class MonitorSettings(_Strict):
     retention_interval_seconds: int = Field(default=3600, ge=60, le=86400)
 
 
+class HardwareSettings(_Strict):
+    """Physical indicators and inputs (BCM pin numbers). Off by default; see docs/HARDWARE.md."""
+
+    enabled: bool = False
+    green_led_pin: int = Field(default=17, ge=2, le=27)  # physical pin 11
+    yellow_led_pin: int = Field(default=27, ge=2, le=27)  # physical pin 13
+    red_led_pin: int = Field(default=22, ge=2, le=27)  # physical pin 15
+    button_pin: int = Field(default=23, ge=2, le=27)  # physical pin 16
+    pir_pin: int = Field(default=24, ge=2, le=27)  # physical pin 18
+
+    @model_validator(mode="after")
+    def _pins_are_distinct(self) -> HardwareSettings:
+        pins = [
+            self.green_led_pin,
+            self.yellow_led_pin,
+            self.red_led_pin,
+            self.button_pin,
+            self.pir_pin,
+        ]
+        if len(set(pins)) != len(pins):
+            raise ValueError("each hardware pin must be used for only one part")
+        return self
+
+
 class Settings(BaseModel):
     server: ServerSettings = ServerSettings()
     storage: StorageSettings = StorageSettings()
@@ -213,6 +237,7 @@ class Settings(BaseModel):
     detection: DetectionSettings = DetectionSettings()
     incidents: IncidentSettings = IncidentSettings()
     monitor: MonitorSettings = MonitorSettings()
+    hardware: HardwareSettings = HardwareSettings()
     # Built frontend (Vite output). Relative paths resolve from the working directory.
     frontend_dist: str = "frontend/dist"
 

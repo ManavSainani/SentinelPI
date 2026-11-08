@@ -11,7 +11,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+gpio = ["gpiozero==2.0.1"]  # Raspberry Pi pins; also needs python3-lgpio from apt on Pi OS
 dev = [
+  "gpiozero==2.0.1",
   "pytest==8.3.4",
   "httpx==0.28.1",
   "ruff==0.8.6",
