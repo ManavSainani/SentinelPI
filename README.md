@@ -18,7 +18,7 @@ incident that shows on the dashboard and takes over the kiosk screen.
 | 6 | Incident correlation and lifecycle | Done |
 | 7 | REST API (local only, SSH tunnel for remote viewing) | Done |
 | 8 | React dashboard and kiosk view | Done |
-| 9 | End-to-end verification | Next |
+| 9 | End-to-end verification (demo + benchmark tool) | Built; Pi gate pending |
 | 10 | Packaging and hardening (systemd services, kiosk autostart) | Planned |
 | 11 | Docs and polish | Planned |
 | After 10 | Hardware: LEDs, acknowledge button, HC-SR501 PIR sensor, audio ([plan](docs/HARDWARE_PLAN.md)) | Planned |
@@ -263,6 +263,25 @@ hash routes: `#/` overview, `#/incidents`, `#/events`, `#/system`, `#/processes`
 - After pulling Phase 8, run `make setup` (or `cd frontend && npm install`) once: the
   frontend gained test dependencies. `make test` now runs backend and frontend tests.
 - `frontend/dist/` is git-ignored; run `make build` on the Mac and rsync it to the Pi (below).
+
+## End-to-end demo and benchmark (Phase 9)
+Both commands start a private monitor and API in a temporary directory (own database, own
+fake auth log, loopback only), so nothing touches your real data. All attack traffic is
+synthetic: documentation-range IPs in a temp log file and a harmless copy of `sleep` named `nc`.
+
+```bash
+python -m sentinelpi.verify demo     # ~15-60 s, prints PASS/FAIL per stage
+python -m sentinelpi.verify bench --idle-seconds 120 --output bench-pi.json
+```
+
+The demo walks collector -> event -> detection -> incident -> API -> acknowledge/resolve and
+checks the privacy and lifecycle rules on the way. The benchmark reports idle CPU, memory,
+disk writes and database growth for the monitor and the API, plus API latency percentiles.
+Numbers are only meaningful for the machine they were measured on; record Pi figures from
+the Pi, with default (realistic) intervals.
+
+Dashboard refresh: the kiosk polls every 5 s (even in a hidden tab); other pages poll more slowly
+and pause while hidden.
 
 ## Development (two terminals)
 ```bash
