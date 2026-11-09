@@ -73,3 +73,16 @@ def test_kiosk_targets_the_kiosk_route_on_loopback():
     text = (DEPLOY / "kiosk" / "sentinelpi-kiosk.sh").read_text()
     assert "127.0.0.1:8787/#/kiosk" in text
     assert "--kiosk" in text
+
+
+def test_led_service_runs_the_status_loop_with_gpio_access_only():
+    svc = _unit("sentinelpi-leds.service")["Service"]
+    assert svc["ExecStart"].endswith("-m sentinelpi.hardware run")
+    assert svc["User"] == "sentinelpi" and svc["SupplementaryGroups"] == "gpio"
+    assert svc["NoNewPrivileges"] == "yes" and svc["CapabilityBoundingSet"] == ""
+    assert svc["RestrictAddressFamilies"] == "AF_UNIX"  # it never talks to the network
+
+
+def test_installer_only_enables_the_led_service_when_hardware_is_configured():
+    text = (DEPLOY / "install.sh").read_text()
+    assert "HW_ENABLED" in text and "sentinelpi-leds.service" in text

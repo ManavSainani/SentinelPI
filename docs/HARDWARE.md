@@ -54,6 +54,35 @@ python -m sentinelpi.hardware check-leds  # green, yellow, red, all, then red bl
 If one LED stays dark: flip it (wrong way round is the usual cause), check that its resistor and
 jumper are in the same breadboard row groups, and re-run. If `probe` says not ready, see below.
 
+## Step 1b: make the LEDs show live status
+The lights are driven by their own small service that reads the incident database, not the web
+page, so they keep working if the dashboard or browser is down.
+
+| Light | Meaning |
+|---|---|
+| Green | Monitor running, metrics fresh, no open incident |
+| Yellow | An open Low or Medium incident, a monitor that has gone quiet, or stale metrics |
+| Red, blinking | An open High or Critical incident that nobody has acknowledged |
+| Red, steady | High or Critical incidents exist but all are acknowledged |
+
+If it cannot read the database, it shows yellow rather than a false green. At start-up all three
+come on for one second as a lamp test.
+
+Turn it on (Pi, after the services are installed):
+```bash
+printf '\n[hardware]\nenabled = true\n' | sudo tee -a /etc/sentinelpi/config.toml
+cd ~/SentinelPI && git pull && sudo deploy/install.sh
+journalctl -u sentinelpi-leds -n 20 --no-pager
+```
+The installer enables `sentinelpi-leds` only when `[hardware] enabled = true` and the GPIO
+library is present (`sudo apt install python3-lgpio`). Try it: run the failed-login loop from your
+Mac (see DEMO.md). Red should blink; acknowledge the incident on the dashboard and red turns
+steady; resolve it and green returns.
+
+To watch it without the service: `python -m sentinelpi.hardware run` (Ctrl+C to stop; it reads the
+database named in your config, so use `SENTINELPI_CONFIG=/etc/sentinelpi/config.toml` and
+`sudo -u sentinelpi` to read the service's data).
+
 ## Pi software setup for GPIO
 ```bash
 sudo apt install -y python3-lgpio

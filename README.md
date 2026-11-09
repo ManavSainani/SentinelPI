@@ -18,7 +18,7 @@ development machine. Hardware figures are in [docs/PERFORMANCE.md](docs/PERFORMA
 - **Detects** with five documented rules: SP-001 repeated SSH failures, SP-002 new listening port (against an approved baseline), SP-003 sustained high CPU, SP-004 watchlisted process names, and SP-005 escalation when two different rules agree.
 - **Correlates** detections into incidents with evidence, a risk score, a lifecycle (open, acknowledged, resolved, false positive) and an audit trail.
 - **Shows** a React dashboard (overview, incidents, events, system, processes, network, about) and a kiosk view (`#/kiosk`).
-- **Runs unattended** as two hardened systemd services with Chromium kiosk autostart.
+- **Runs unattended** as hardened systemd services with Chromium kiosk autostart, plus optional status LEDs (green, yellow, red) on the Pi's GPIO pins.
 
 | Dashboard | Incident detail |
 |---|---|

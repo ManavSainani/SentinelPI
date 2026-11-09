@@ -3,6 +3,7 @@
 probe        is the GPIO library installed and can it reach the pins?
 pins         print the wiring table for the configured pins
 check-leds   light each LED in turn so you can confirm the wiring by eye
+run          show live status on the LEDs (what the systemd service runs)
 """
 
 from __future__ import annotations
@@ -93,12 +94,20 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("probe")
     sub.add_parser("pins")
+    sub.add_parser("run")
     leds = sub.add_parser("check-leds")
     leds.add_argument("--seconds", type=float, default=2.0)
     args = parser.parse_args(argv)
     h = load_settings().hardware
     if args.command == "probe":
         return probe()
+    if args.command == "run":
+        import logging
+
+        from sentinelpi.hardware.status import run_service
+
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
+        return run_service(load_settings())
     if args.command == "pins":
         print_pins(h)
         return 0

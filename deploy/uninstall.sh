@@ -2,8 +2,8 @@
 # Remove the SentinelPI services. Keeps the database and config unless --purge is given.
 set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "run as root: sudo deploy/uninstall.sh [--purge]" >&2; exit 1; }
-systemctl disable --now sentinelpi-api.service sentinelpi-monitor.service 2>/dev/null || true
-rm -f /etc/systemd/system/sentinelpi-api.service /etc/systemd/system/sentinelpi-monitor.service
+systemctl disable --now sentinelpi-leds.service sentinelpi-api.service sentinelpi-monitor.service 2>/dev/null || true
+rm -f /etc/systemd/system/sentinelpi-leds.service /etc/systemd/system/sentinelpi-api.service /etc/systemd/system/sentinelpi-monitor.service
 systemctl daemon-reload
 rm -rf /opt/sentinelpi
 if [ "${1:-}" = "--purge" ]; then

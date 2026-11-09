@@ -6,6 +6,7 @@ Two systemd services run as an unprivileged `sentinelpi` account (no login, no s
 |---|---|---|
 | `sentinelpi-monitor` | collectors, detection, incidents, retention | nothing |
 | `sentinelpi-api` | REST API and dashboard | `127.0.0.1:8787` only |
+| `sentinelpi-leds` (optional) | drives the status LEDs from the database | nothing |
 
 The kiosk is a separate piece: your desktop user's session opens full-screen Chromium on the
 HDMI monitor at login.

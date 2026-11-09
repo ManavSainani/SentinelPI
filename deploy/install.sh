@@ -43,8 +43,15 @@ say "Installing the code into $PREFIX"
 install -d -m 0755 "$PREFIX"
 python3 -m venv "$PREFIX/venv"
 "$PREFIX/venv/bin/pip" install --quiet --upgrade pip
+# The Pi's GPIO library (lgpio) comes from apt; let the virtualenv see it when it is there.
+HAVE_GPIO=0
+if python3 -c 'import lgpio' 2>/dev/null; then
+  sed -i 's/include-system-site-packages = false/include-system-site-packages = true/' \
+    "$PREFIX/venv/pyvenv.cfg"
+  HAVE_GPIO=1
+fi
 "$PREFIX/venv/bin/pip" install --quiet --upgrade --force-reinstall --no-deps "$REPO/backend"
-"$PREFIX/venv/bin/pip" install --quiet "$REPO/backend"
+"$PREFIX/venv/bin/pip" install --quiet "$REPO/backend[gpio]"
 rm -rf "$PREFIX/frontend"
 install -d -m 0755 "$PREFIX/frontend"
 cp -r "$REPO/frontend/dist" "$PREFIX/frontend/dist"
@@ -65,10 +72,22 @@ SENTINELPI_CONFIG="$CONF_DIR/config.toml" "$PREFIX/venv/bin/python" -c \
 say "Installing and starting the services"
 install -m 0644 "$REPO/deploy/systemd/sentinelpi-monitor.service" /etc/systemd/system/
 install -m 0644 "$REPO/deploy/systemd/sentinelpi-api.service" /etc/systemd/system/
+install -m 0644 "$REPO/deploy/systemd/sentinelpi-leds.service" /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now sentinelpi-monitor.service sentinelpi-api.service
+HW_ENABLED=$(SENTINELPI_CONFIG="$CONF_DIR/config.toml" "$PREFIX/venv/bin/python" -c \
+  'from sentinelpi.config import load_settings; print(int(load_settings().hardware.enabled))')
+if [ "$HW_ENABLED" = 1 ] && [ "$HAVE_GPIO" = 1 ] && getent group gpio >/dev/null; then
+  systemctl enable --now sentinelpi-leds.service
+  echo "status LEDs enabled"
+elif [ "$HW_ENABLED" = 1 ]; then
+  echo "NOTE: [hardware] is enabled but the GPIO library is missing; run: sudo apt install python3-lgpio, then re-run this installer"
+else
+  systemctl disable --now sentinelpi-leds.service 2>/dev/null || true
+  echo "status LEDs not enabled (set [hardware] enabled = true in $CONF_DIR/config.toml, then re-run this installer)"
+fi
 sleep 4
-systemctl --no-pager --lines=0 status sentinelpi-monitor sentinelpi-api || true
+systemctl --no-pager --lines=0 status sentinelpi-monitor sentinelpi-api sentinelpi-leds || true
 
 cat <<MSG
 

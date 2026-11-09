@@ -12,6 +12,7 @@ from sentinelpi import __version__
 from sentinelpi.api.deps import get_conn, get_settings
 from sentinelpi.config import Settings
 from sentinelpi.events import Severity
+from sentinelpi.health import metrics_stale, monitor_running
 from sentinelpi.incidents.models import Incident, IncidentStatus
 from sentinelpi.monitor import HEARTBEAT_KEY
 from sentinelpi.storage import incidents_repo, state_repo, telemetry_repo
@@ -70,9 +71,8 @@ def _monitor_status(conn: sqlite3.Connection, settings: Settings, now: datetime)
         return MonitorStatus(running=False, last_heartbeat=None, age_seconds=None)
     beat = from_db(raw)
     age = max(0.0, (now - beat).total_seconds())
-    # Alive if it has reported within three detection cycles (plus slack for a slow cycle).
     return MonitorStatus(
-        running=age <= 3 * settings.monitor.detection_interval_seconds + 15,
+        running=monitor_running(age, settings),
         last_heartbeat=beat,
         age_seconds=round(age, 1),
     )
@@ -94,7 +94,7 @@ def system_status(
         metrics = MetricsStatus(
             observed_at=sample.timestamp,
             age_seconds=round(age, 1),
-            stale=age > max(30, 3 * settings.monitor.metrics_interval_seconds),
+            stale=metrics_stale(age, settings),
             **sample.model_dump(
                 include={
                     "cpu_percent",

@@ -1,0 +1,45 @@
+[Unit]
+Description=SentinelPI status LEDs (green, yellow, red from the incident database)
+Documentation=https://github.com/ManavSainani/SentinelPI
+After=sentinelpi-monitor.service
+Wants=sentinelpi-monitor.service
+
+[Service]
+Type=simple
+User=sentinelpi
+Group=sentinelpi
+# gpio: permission to use the GPIO pins (/dev/gpiochip*).
+SupplementaryGroups=gpio
+WorkingDirectory=/opt/sentinelpi
+Environment=SENTINELPI_CONFIG=/etc/sentinelpi/config.toml
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sentinelpi/venv/bin/python -m sentinelpi.hardware run
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=10
+StateDirectory=sentinelpi
+StateDirectoryMode=0750
+UMask=0027
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/sentinelpi
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target
