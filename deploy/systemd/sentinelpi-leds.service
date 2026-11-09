@@ -1,5 +1,5 @@
 [Unit]
-Description=SentinelPI status LEDs (green, yellow, red from the incident database)
+Description=SentinelPI status LEDs and acknowledge button (reads and updates the incident database)
 Documentation=https://github.com/ManavSainani/SentinelPI
 After=sentinelpi-monitor.service
 Wants=sentinelpi-monitor.service
@@ -10,7 +10,8 @@ User=sentinelpi
 Group=sentinelpi
 # gpio: permission to use the GPIO pins (/dev/gpiochip*).
 SupplementaryGroups=gpio
-WorkingDirectory=/opt/sentinelpi
+# lgpio keeps small pipe files in the working directory, so it must be writable.
+WorkingDirectory=/var/lib/sentinelpi
 Environment=SENTINELPI_CONFIG=/etc/sentinelpi/config.toml
 Environment=PYTHONUNBUFFERED=1
 ExecStart=/opt/sentinelpi/venv/bin/python -m sentinelpi.hardware run

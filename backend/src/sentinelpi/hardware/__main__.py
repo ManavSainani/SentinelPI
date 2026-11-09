@@ -3,6 +3,7 @@
 probe        is the GPIO library installed and can it reach the pins?
 pins         print the wiring table for the configured pins
 check-leds   light each LED in turn so you can confirm the wiring by eye
+check-button wait for presses on the button and say what it sees
 run          show live status on the LEDs (what the systemd service runs)
 """
 
@@ -89,18 +90,48 @@ def check_leds(h: HardwareSettings, seconds: float) -> int:
     return 0
 
 
+def check_button(h: HardwareSettings, seconds: float) -> int:
+    from gpiozero import Button
+
+    try:
+        button = Button(h.button_pin, pull_up=True)
+    except Exception as exc:
+        print(f"cannot use the button pin: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
+    presses = []
+    try:
+        if button.is_pressed:
+            print(
+                "The pin reads PRESSED before you touched anything. The button is probably turned\n"
+                "the wrong way round (its two sides are always joined): rotate it a quarter turn."
+            )
+            return 1
+        button.when_pressed = lambda: (presses.append(1), print("pressed"))
+        button.when_released = lambda: print("released")
+        print(f"Resting state is fine. Press and release the button now ({seconds:.0f} s) ...")
+        time.sleep(seconds)
+    finally:
+        button.close()
+    print(f"saw {len(presses)} press(es)" if presses else "saw no presses: check the wiring")
+    return 0 if presses else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m sentinelpi.hardware")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("probe")
     sub.add_parser("pins")
     sub.add_parser("run")
+    btn = sub.add_parser("check-button")
+    btn.add_argument("--seconds", type=float, default=20.0)
     leds = sub.add_parser("check-leds")
     leds.add_argument("--seconds", type=float, default=2.0)
     args = parser.parse_args(argv)
     h = load_settings().hardware
     if args.command == "probe":
         return probe()
+    if args.command == "check-button":
+        return check_button(h, max(2.0, min(args.seconds, 120.0)))
     if args.command == "run":
         import logging
 

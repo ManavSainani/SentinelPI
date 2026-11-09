@@ -92,8 +92,27 @@ pip install gpiozero==2.0.1
 Your user must be in the `gpio` group (the default on Raspberry Pi OS). The services will get
 the same access when the status loop is added.
 
+## Step 2: acknowledge button
+Wiring: the interactive guide shows it; in words, a push button straddling the centre channel
+(legs in rows 47 and 49), GP23 (left side, row 13) to row 47, and row 49 to the left blue (-)
+rail. No resistor: the pin uses the Pi's internal pull-up. Check it before relying on it:
+```bash
+python -m sentinelpi.hardware check-button
+```
+It reports "pressed" and "released", and tells you to rotate the button a quarter turn if it
+reads pressed at rest (its legs are joined the wrong way round).
+
+What it does: hold the button for half a second and it acknowledges the incident the kiosk is
+showing (the most severe open one, newest first). The kiosk drops back to its calm screen within
+about 5 seconds, and the red LED goes from blinking to steady. With two incidents open, the next
+press clears the next one. A press with nothing open does nothing. A quick tap is ignored, so a
+brush or a flicker on the wire cannot acknowledge anything.
+
+It is physical access, not a login: anyone at the Pi can press it. Every press is recorded in the
+incident's audit trail with the actor "button". Acknowledging is not resolving: the incident
+stays open for review, and you resolve it from the dashboard.
+
 ## Coming next
-- Step 2: acknowledge button (GPIO23 to ground, internal pull-up, no resistor).
 - Step 3: HC-SR501 PIR. It is powered from 5 V; its output is documented as 3.3 V but must be
   measured on your module before it touches a GPIO pin. Wiring waits for that check.
 - Step 4: audio over the monitor's built-in HDMI speakers (no wiring).

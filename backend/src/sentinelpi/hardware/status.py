@@ -15,6 +15,7 @@ from datetime import datetime
 
 from sentinelpi.config import Settings
 from sentinelpi.events import Severity
+from sentinelpi.hardware.button import open_button, press_handler
 from sentinelpi.hardware.leds import LedPanel, open_panel
 from sentinelpi.health import metrics_stale, monitor_running
 from sentinelpi.incidents.models import IncidentStatus
@@ -73,8 +74,13 @@ class StatusLoop:
     def __init__(self, db: Database, settings: Settings, panel: LedPanel) -> None:
         self._db, self._settings, self._panel = db, settings, panel
         self._shown: LedState | None = None
+        self._lock = threading.Lock()  # the button thread and the polling loop both call step
 
     def step(self, now: datetime | None = None) -> LedState:
+        with self._lock:
+            return self._step(now)
+
+    def _step(self, now: datetime | None) -> LedState:
         try:
             with self._db.session() as conn:
                 state = led_state(conn, self._settings, now or utc_now())
@@ -105,12 +111,21 @@ def run_service(settings: Settings) -> int:
         print(f"cannot use the LEDs: {why}")
         return 1
     stop = threading.Event()
+    button = None
     for sig in (signal.SIGTERM, signal.SIGINT):
         signal.signal(sig, lambda *_: stop.set())
     try:
         panel.show(green=True, yellow=True, red=True)  # one second of "all on" proves the wiring
         stop.wait(1.0)
-        StatusLoop(Database(settings.storage.db_path), settings, panel).run(stop)
+        db = Database(settings.storage.db_path)
+        loop = StatusLoop(db, settings, panel)
+        try:
+            button = open_button(settings.hardware.button_pin, press_handler(db, after=loop.step))
+        except Exception as exc:  # no button must never stop the lights
+            log.warning("acknowledge button unavailable: %s", exc)
+        loop.run(stop)
     finally:
+        if button is not None:
+            button.close()
         panel.close()
     return 0

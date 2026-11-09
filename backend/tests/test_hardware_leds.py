@@ -91,3 +91,28 @@ def test_probe_reports_without_crashing(mock_pins, capsys):
     probe()  # result depends on the machine; it must print a verdict, never raise
     out = capsys.readouterr().out
     assert "gpiozero 2." in out and "RESULT:" in out
+
+
+def test_check_button_sees_presses_and_flags_a_stuck_button(mock_pins, capsys, monkeypatch):
+    import threading
+    import time
+
+    h = HardwareSettings()
+    pin = mock_pins.pin(h.button_pin)
+
+    def press():
+        time.sleep(0.3)
+        pin.drive_low()
+        time.sleep(0.1)
+        pin.drive_high()
+
+    threading.Thread(target=press).start()
+    assert main(["check-button", "--seconds", "2"]) == 0
+    assert "saw 1 press" in capsys.readouterr().out
+
+    import gpiozero
+
+    # a button that is always joined reads pressed at rest
+    monkeypatch.setattr(gpiozero.Button, "is_pressed", property(lambda self: True))
+    assert main(["check-button", "--seconds", "2"]) == 1
+    assert "rotate it" in capsys.readouterr().out

@@ -24,7 +24,7 @@ TABLES = {
 
 def test_fresh_apply_then_idempotent(tmp_path):
     db = Database(tmp_path / "a.db")
-    assert db.migrate() == [1, 2, 3, 4]
+    assert db.migrate() == [1, 2, 3, 4, 5]
     assert db.migrate() == []
     with db.session() as c:
         names = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
@@ -114,3 +114,34 @@ def test_incident_delete_releases_events_and_links(conn):
     conn.execute("DELETE FROM incidents WHERE id = 'i1'")
     assert conn.execute("SELECT incident_id FROM events WHERE id='e1'").fetchone()[0] is None
     assert conn.execute("SELECT COUNT(*) FROM incident_events").fetchone()[0] == 0
+
+
+def test_upgrade_from_version_4_keeps_the_audit_trail(tmp_path, monkeypatch):
+    all_migrations = migrations.load_migrations()
+    monkeypatch.setattr(migrations, "load_migrations", lambda: all_migrations[:4])
+    db = Database(tmp_path / "old.db")
+    assert db.migrate() == [1, 2, 3, 4]
+    with db.session() as c:
+        c.execute(
+            "INSERT INTO incidents (id, title, severity, first_seen, last_seen, created_at,"
+            " updated_at, host, rule_ids_json, risk_breakdown_json)"
+            " VALUES ('i1', 't', 'high', 'x', 'x', 'x', 'x', 'pi', '[]', '[]')"
+        )
+        for actor in ("system", "user"):
+            c.execute(
+                "INSERT INTO incident_audit (incident_id, at, kind, actor)"
+                " VALUES ('i1', 'x', 'status_changed', ?)",
+                (actor,),
+            )
+    monkeypatch.setattr(migrations, "load_migrations", lambda: all_migrations)
+    assert db.migrate() == [5]
+    with db.session() as c:
+        assert [r[0] for r in c.execute("SELECT actor FROM incident_audit ORDER BY id")] == [
+            "system",
+            "user",
+        ]
+        c.execute(
+            "INSERT INTO incident_audit (incident_id, at, kind, actor)"
+            " VALUES ('i1', 'x', 'status_changed', 'button')"
+        )
+        assert c.execute("SELECT COUNT(*) FROM incident_audit").fetchone()[0] == 3
