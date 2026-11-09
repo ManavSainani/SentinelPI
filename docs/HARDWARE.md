@@ -17,13 +17,27 @@ in brackets. Change them in `[hardware]` in the config if you prefer others.
 **Power the Pi off and unplug it before wiring.** (`sudo poweroff`, wait for the green light to
 stop, then unplug.) Keep the ribbon cable's red stripe on pin 1 end.
 
-Your breadboard has the Pi's T-shaped breakout plugged into the top rows, straddling the centre
-channel. Each breakout pin owns one numbered row. Holes A-D in a row connect to that row's pin
-on the left side of the breakout (F-J on the right side), so you can plug a wire into any free
-hole beside the pin. Rows 24 and below are free.
+Your breakout is a Pineworks Labs T-board. Its stem carries only GPIO pins (no ground pins), in
+two columns, one numbered breadboard row per pin. Read from the stem labels:
 
-**Part A: build three identical LED circuits (no Pi wires yet).** Left half, columns A-E.
-Rows are numbered on the breadboard's edge.
+| Row | Left side | Right side |
+|---|---|---|
+| 8 | GP18 | **GP17** |
+| 9 | GP19 | GP16 |
+| 10 | GP20 | GP13 |
+| 11 | GP21 | GP12 |
+| 12 | **GP22** | GP6 |
+| 13 | GP23 | GP5 |
+| 14 | GP24 | GP4 |
+| 15 | GP25 | CE1 |
+| 16 | GP26 | CE0 |
+| 17 | **GP27** | MOSI |
+
+Any free hole in the same row and on the same side of the centre channel connects to that pin.
+Rows 24 and below are free. **Ground and power come from the two small pads on the top wing**
+("+ 3.3V -" on the left, "+ 5V -" on the right), not from the stem.
+
+**Part A: build three identical LED circuits (no Pi wires yet).** Left half, rows 26 and below.
 
 | LED | Resistor | LED legs | Ground jumper |
 |---|---|---|---|
@@ -31,18 +45,19 @@ Rows are numbered on the breadboard's edge.
 | Yellow | row 32 col B to row 34 col B | long leg row 34 col C, short leg row 35 col C | row 35 col D to the left blue (-) rail |
 | Red | row 38 col B to row 40 col B | long leg row 40 col C, short leg row 41 col C | row 41 col D to the left blue (-) rail |
 
-The long leg is the positive one; if you cannot tell, it is the leg that is not flat against the
-LED's rim. The current path is: GPIO jumper (row 26/32/38 col A) -> resistor -> LED -> rail.
+The long leg is positive. The current path: GPIO jumper (row 26/32/38 col A) -> resistor -> LED -> rail.
 
-**Part B: ground.** One jumper from any breakout row labelled GND (hole A-D beside it) to the
-same left blue (-) rail. Some long breadboards split their rails halfway down; if no LED lights,
-that is the first thing to suspect.
+**Part B: ground.** Connect the "-" hole of the left "+ 3.3V -" pad to the left blue (-) rail
+with a male-to-male jumper. If the pad has no header, the plated hole usually holds a jumper
+pin firmly enough for testing; for a permanent build, solder a 2-pin header into the pad.
+Some long breadboards split their rails halfway down; if no LED lights, suspect that first.
 
-**Part C: the three GPIO jumpers.** Read the tiny labels printed on the breakout beside each
-row. A jumper from the row labelled 17 to green's row 26 col A, 27 to yellow's row 32 col A, and
-22 to red's row 38 col A. If a label is hard to read, count from a clearly labelled neighbour;
-the physical pin numbers in the table above (11, 13, 15) are the order on the Pi's header. A
-wrong pin cannot hurt anything here, because every path has a resistor, but the LED will not
+**Part C: the three GPIO jumpers.**
+- GP17 (right side, row 8, any free hole F-J) to green's row 26 col A.
+- GP27 (left side, row 17) to yellow's row 32 col A.
+- GP22 (left side, row 12) to red's row 38 col A.
+
+A wrong pin cannot hurt anything here, because every path has a resistor, but the LED will not
 respond to the check tool.
 
 ### Check it
