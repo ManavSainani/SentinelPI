@@ -46,6 +46,10 @@ wrong pin cannot hurt anything here, because every path has a resistor, but the 
 respond to the check tool.
 
 ### Check it
+When the `sentinelpi-leds` service is running it owns the pins, so the check commands report
+"GPIO busy". Stop it first with `sudo systemctl stop sentinelpi-leds`, run the check, then
+`sudo systemctl start sentinelpi-leds`.
+
 ```bash
 cd ~/SentinelPI && source .venv/bin/activate
 python -m sentinelpi.hardware probe       # expect: RESULT: ready

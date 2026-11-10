@@ -26,6 +26,18 @@ def _pin(bcm: int) -> str:
     return f"GPIO{bcm}" + (f" (physical pin {phys})" if phys else "")
 
 
+BUSY_HINT = (
+    "The pins are probably in use by the sentinelpi-leds service. Stop it for the check:\n"
+    "  sudo systemctl stop sentinelpi-leds\n"
+    "and start it again afterwards:\n"
+    "  sudo systemctl start sentinelpi-leds"
+)
+
+
+def _with_hint(message: str) -> str:
+    return f"{message}\n{BUSY_HINT}" if "busy" in message.lower() else message
+
+
 def print_pins(h: HardwareSettings) -> None:
     rows = [
         ("Green LED", h.green_led_pin, "long leg -> 220 ohm -> this pin; short leg -> ground"),
@@ -71,7 +83,7 @@ def check_leds(h: HardwareSettings, seconds: float) -> int:
 
     panel, why = open_panel(h)
     if panel is None:
-        print(f"cannot use the LEDs: {why}", file=sys.stderr)
+        print(_with_hint(f"cannot use the LEDs: {why}"), file=sys.stderr)
         return 1
     try:
         for name in panel.NAMES:
@@ -96,7 +108,9 @@ def check_button(h: HardwareSettings, seconds: float) -> int:
     try:
         button = Button(h.button_pin, pull_up=True)
     except Exception as exc:
-        print(f"cannot use the button pin: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(
+            _with_hint(f"cannot use the button pin: {type(exc).__name__}: {exc}"), file=sys.stderr
+        )
         return 1
     presses = []
     try:

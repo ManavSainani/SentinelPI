@@ -116,3 +116,15 @@ def test_check_button_sees_presses_and_flags_a_stuck_button(mock_pins, capsys, m
     monkeypatch.setattr(gpiozero.Button, "is_pressed", property(lambda self: True))
     assert main(["check-button", "--seconds", "2"]) == 1
     assert "rotate it" in capsys.readouterr().out
+
+
+def test_a_busy_pin_tells_you_to_stop_the_service(monkeypatch, capsys):
+    import gpiozero
+
+    class Busy:
+        def __init__(self, *_a, **_k):
+            raise RuntimeError("error: 'GPIO busy'")
+
+    monkeypatch.setattr(gpiozero, "Button", Busy)
+    assert main(["check-button", "--seconds", "2"]) == 1
+    assert "systemctl stop sentinelpi-leds" in capsys.readouterr().err
